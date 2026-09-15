@@ -1,0 +1,15 @@
+# Local Netlify folder
+.netlify
+
+# env files with secrets (never commit)
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+
+# dependencies / build output
+node_modules/
+**/node_modules/
+dist/
+build/
