@@ -18,7 +18,7 @@ Sem nenhuma configuração adicional, o app já funciona: as fichas ficam salvas
 Enquanto não configurado, o app roda em modo local (item acima). Para salvar de vez, em um banco compartilhado por todo mundo:
 
 1. Crie uma conta gratuita em [supabase.com](https://supabase.com) e um novo projeto.
-2. No painel do projeto, abra **SQL Editor** e rode o conteúdo de [`supabase/schema.sql`](./supabase/schema.sql).
+2. No painel do projeto, abra **SQL Editor** e rode o conteúdo de [`supabase/schema.sql`](./supabase/schema.sql) e depois de [`supabase/storage.sql`](./supabase/storage.sql) (cria o bucket `imagens`, usado pelas fotos das fichas e inspeções).
 3. Em **Project Settings → API**, copie a **Project URL** e a chave **anon public**.
 4. Copie `.env.example` para `.env` e cole os dois valores:
 
