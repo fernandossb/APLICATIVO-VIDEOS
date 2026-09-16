@@ -16,7 +16,7 @@ function writeLocal(table, all) {
   localStorage.setItem(localKeyFor(table), JSON.stringify(all));
 }
 
-function createStore(table) {
+function createStore(table, toColumns = () => ({})) {
   async function save(record) {
     const id = record.id || crypto.randomUUID();
     const toSave = { ...record, id, atualizadoEm: new Date().toISOString() };
@@ -24,8 +24,7 @@ function createStore(table) {
     if (supabaseConfigured) {
       const { error } = await supabase.from(table).upsert({
         id,
-        codigo: toSave.codigo ?? null,
-        referencia: toSave.referencia ?? null,
+        ...toColumns(toSave),
         dados: toSave,
         atualizado_em: toSave.atualizadoEm,
       });
@@ -77,6 +76,6 @@ function createStore(table) {
   return { save, load, list, remove };
 }
 
-export const fichasStore = createStore("fichas");
-export const operacoesStore = createStore("operacoes");
+export const fichasStore = createStore("fichas", (f) => ({ referencia: f.referencia ?? null }));
+export const operacoesStore = createStore("operacoes", (o) => ({ codigo: o.codigo ?? null }));
 export const inspecoesStore = createStore("inspecoes");
