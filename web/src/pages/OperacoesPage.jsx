@@ -1,8 +1,9 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { operacoesStore } from "../lib/storage";
+import { operacoesStore, fichasStore } from "../lib/storage";
 import { supabaseConfigured } from "../lib/supabase";
 import { metodosTempo, statusOperacaoOpcoes, tempoPorGrupoTecido } from "../data/constants";
 import SearchBox from "../components/SearchBox";
+import ColumnFilterButton from "../components/ColumnFilterButton";
 
 const videosFolderUrl = import.meta.env.VITE_VIDEOS_FOLDER_URL;
 
@@ -42,7 +43,36 @@ function compararCodigos(a, b) {
   return String(a).localeCompare(String(b));
 }
 
-const OperacaoRow = memo(function OperacaoRow({ op, onChange, onCommit, onRemove }) {
+// Um valor por coluna, usado tanto para montar as opções do filtro quanto para aplicá-lo.
+const colunaValor = {
+  codigo: (op) => op.codigo,
+  grupoMaquina: (op) => op.grupoMaquina,
+  descricao: (op) => op.descricao,
+  tempoG1: (op) => op.tempoG1,
+  tempoG2: (op) => tempoPorGrupoTecido(op.tempoG1, "G2").toFixed(4),
+  tempoG3: (op) => tempoPorGrupoTecido(op.tempoG1, "G3").toFixed(4),
+  metodo: (op) => op.metodo,
+  statusVideo: (op) => op.statusVideo || "Pendente",
+  statusGSD: (op) => op.statusGSD || "Pendente",
+  atualizadoEm: (op) => formatDataHora(op.atualizadoEm),
+};
+
+function ThFiltravel({ children, className, colKey, operacoes, columnFilters, onFilterChange }) {
+  return (
+    <th className={className}>
+      <div className="th-cell">
+        <span>{children}</span>
+        <ColumnFilterButton
+          values={operacoes.map(colunaValor[colKey])}
+          active={columnFilters[colKey] ?? null}
+          onChange={(valor) => onFilterChange(colKey, valor)}
+        />
+      </div>
+    </th>
+  );
+}
+
+const OperacaoRow = memo(function OperacaoRow({ op, selecionado, onSelect, onChange, onCommit }) {
   const setTextField = (key) => (e) => onChange({ ...op, [key]: e.target.value });
   const setSelectField = (key) => (e) => {
     const atualizado = { ...op, [key]: e.target.value };
@@ -54,7 +84,18 @@ const OperacaoRow = memo(function OperacaoRow({ op, onChange, onCommit, onRemove
   const statusGSD = op.statusGSD || "Pendente";
 
   return (
-    <tr className={op.codigo.trim() ? "" : "draft-row"}>
+    <tr
+      className={`${op.codigo.trim() ? "" : "draft-row"}${selecionado ? " row-selected" : ""}`}
+      onClick={() => onSelect(op.id)}
+    >
+      <td className="col-select">
+        <input
+          type="radio"
+          checked={selecionado}
+          onChange={() => onSelect(op.id)}
+          aria-label={`Selecionar operação ${op.codigo || "nova"}`}
+        />
+      </td>
       <td className="col-code">
         <input value={op.codigo} onChange={setTextField("codigo")} onBlur={commitAtual} placeholder="10004" />
       </td>
@@ -115,11 +156,6 @@ const OperacaoRow = memo(function OperacaoRow({ op, onChange, onCommit, onRemove
         </select>
       </td>
       <td className="col-date muted">{formatDataHora(op.atualizadoEm)}</td>
-      <td className="col-actions">
-        <button type="button" className="icon-button tiny" onClick={() => onRemove(op.id)} title="Remover esta operação do catálogo">
-          ×
-        </button>
-      </td>
     </tr>
   );
 });
@@ -129,6 +165,9 @@ export default function OperacoesPage() {
   const [rascunhoIds, setRascunhoIds] = useState(() => new Set());
   const [status, setStatus] = useState("");
   const [busca, setBusca] = useState("");
+  const [columnFilters, setColumnFilters] = useState({});
+  const [selecionadoId, setSelecionadoId] = useState(null);
+  const [confirmacao, setConfirmacao] = useState(null);
   const operacoesRef = useRef([]);
 
   useEffect(() => {
@@ -174,25 +213,11 @@ export default function OperacoesPage() {
     }
   }, []);
 
-  const removerLinha = useCallback(async (id) => {
-    setOperacoes((lista) => lista.filter((op) => op.id !== id));
-    setRascunhoIds((set) => {
-      if (!set.has(id)) return set;
-      const copia = new Set(set);
-      copia.delete(id);
-      return copia;
-    });
-    try {
-      await operacoesStore.remove(id);
-    } catch (err) {
-      setStatus(`Erro ao remover: ${err.message}`);
-    }
-  }, []);
-
   const handleNovaLinha = () => {
     const nova = { ...emptyOperacao(), id: crypto.randomUUID() };
     setOperacoes((lista) => [nova, ...lista]);
     setRascunhoIds((set) => new Set(set).add(nova.id));
+    setSelecionadoId(nova.id);
     setStatus("");
   };
 
@@ -235,6 +260,59 @@ export default function OperacoesPage() {
     }
   };
 
+  // Excluir passa por aqui: primeiro verifica se o código está em uso em alguma
+  // ficha técnica (roteiro) antes de liberar a exclusão de verdade.
+  const handleExcluirClick = async () => {
+    const op = operacoes.find((o) => o.id === selecionadoId);
+    if (!op) return;
+    const codigo = op.codigo.trim();
+
+    if (!codigo) {
+      setConfirmacao({ op, usadoEm: [] });
+      return;
+    }
+
+    setStatus("Verificando uso em fichas técnicas...");
+    try {
+      const fichas = await fichasStore.list();
+      const usadoEm = fichas.filter((f) =>
+        (f.roteiro || []).some((r) => r.tipo === "operacao" && r.codigo === codigo)
+      );
+      setConfirmacao({ op, usadoEm });
+      setStatus("");
+    } catch (err) {
+      setStatus(`Erro ao verificar uso: ${err.message}`);
+    }
+  };
+
+  const confirmarExclusao = async () => {
+    const op = confirmacao.op;
+    setConfirmacao(null);
+    setSelecionadoId((atual) => (atual === op.id ? null : atual));
+    setOperacoes((lista) => lista.filter((o) => o.id !== op.id));
+    setRascunhoIds((set) => {
+      if (!set.has(op.id)) return set;
+      const copia = new Set(set);
+      copia.delete(op.id);
+      return copia;
+    });
+    try {
+      await operacoesStore.remove(op.id);
+      setStatus("Operação excluída.");
+    } catch (err) {
+      setStatus(`Erro ao excluir: ${err.message}`);
+    }
+  };
+
+  const handleFilterChange = useCallback((colKey, valor) => {
+    setColumnFilters((atual) => {
+      const copia = { ...atual };
+      if (valor == null) delete copia[colKey];
+      else copia[colKey] = valor;
+      return copia;
+    });
+  }, []);
+
   const linhasOrdenadas = useMemo(() => {
     const rascunhos = operacoes.filter((op) => rascunhoIds.has(op.id));
     const restantes = operacoes
@@ -245,13 +323,26 @@ export default function OperacoesPage() {
 
   const linhasFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    if (!termo) return linhasOrdenadas;
-    return linhasOrdenadas.filter(
-      (op) =>
-        rascunhoIds.has(op.id) ||
-        [op.codigo, op.descricao, op.grupoMaquina].some((campo) => String(campo || "").toLowerCase().includes(termo))
-    );
-  }, [linhasOrdenadas, busca, rascunhoIds]);
+    return linhasOrdenadas.filter((op) => {
+      if (rascunhoIds.has(op.id)) return true;
+
+      if (termo) {
+        const combina = [op.codigo, op.descricao, op.grupoMaquina].some((campo) =>
+          String(campo || "").toLowerCase().includes(termo)
+        );
+        if (!combina) return false;
+      }
+
+      for (const [colKey, permitidos] of Object.entries(columnFilters)) {
+        const valor = String(colunaValor[colKey](op) ?? "").trim();
+        if (!permitidos.has(valor)) return false;
+      }
+
+      return true;
+    });
+  }, [linhasOrdenadas, busca, rascunhoIds, columnFilters]);
+
+  const thProps = { operacoes, columnFilters, onFilterChange: handleFilterChange };
 
   return (
     <main className="workspace">
@@ -271,6 +362,15 @@ export default function OperacoesPage() {
           <div className="toolbar-actions">
             <button type="button" className="button button-primary" onClick={handleNovaLinha}>
               + Nova operação
+            </button>
+            <button
+              type="button"
+              className="button button-danger-outline"
+              disabled={!selecionadoId}
+              onClick={handleExcluirClick}
+              title={selecionadoId ? "Excluir a operação selecionada" : "Selecione uma linha para excluir"}
+            >
+              Excluir selecionada
             </button>
             <label className="button button-outline" style={{ cursor: "pointer" }}>
               + Importar vídeos (JSON)
@@ -293,17 +393,37 @@ export default function OperacoesPage() {
           <table>
             <thead>
               <tr>
-                <th className="col-code">Código</th>
-                <th className="col-group">Máquina</th>
-                <th className="col-desc">Descrição da operação</th>
-                <th className="col-time">Tempo G1</th>
-                <th className="col-time">Tempo G2</th>
-                <th className="col-time">Tempo G3</th>
-                <th className="col-method">Método</th>
-                <th className="col-status">Vídeo</th>
-                <th className="col-status">GSD</th>
-                <th className="col-date">Data de alteração</th>
-                <th />
+                <th className="col-select" />
+                <ThFiltravel colKey="codigo" className="col-code" {...thProps}>
+                  Código
+                </ThFiltravel>
+                <ThFiltravel colKey="grupoMaquina" className="col-group" {...thProps}>
+                  Máquina
+                </ThFiltravel>
+                <ThFiltravel colKey="descricao" className="col-desc" {...thProps}>
+                  Descrição da operação
+                </ThFiltravel>
+                <ThFiltravel colKey="tempoG1" className="col-time" {...thProps}>
+                  Tempo G1
+                </ThFiltravel>
+                <ThFiltravel colKey="tempoG2" className="col-time" {...thProps}>
+                  Tempo G2
+                </ThFiltravel>
+                <ThFiltravel colKey="tempoG3" className="col-time" {...thProps}>
+                  Tempo G3
+                </ThFiltravel>
+                <ThFiltravel colKey="metodo" className="col-method" {...thProps}>
+                  Método
+                </ThFiltravel>
+                <ThFiltravel colKey="statusVideo" className="col-status" {...thProps}>
+                  Vídeo
+                </ThFiltravel>
+                <ThFiltravel colKey="statusGSD" className="col-status" {...thProps}>
+                  GSD
+                </ThFiltravel>
+                <ThFiltravel colKey="atualizadoEm" className="col-date" {...thProps}>
+                  Data de alteração
+                </ThFiltravel>
               </tr>
             </thead>
             <tbody>
@@ -317,20 +437,86 @@ export default function OperacoesPage() {
                 </tr>
               )}
               {linhasFiltradas.map((op) => (
-                <OperacaoRow key={op.id} op={op} onChange={alterarLinha} onCommit={salvarLinha} onRemove={removerLinha} />
+                <OperacaoRow
+                  key={op.id}
+                  op={op}
+                  selecionado={op.id === selecionadoId}
+                  onSelect={setSelecionadoId}
+                  onChange={alterarLinha}
+                  onCommit={salvarLinha}
+                />
               ))}
             </tbody>
           </table>
         </div>
 
         <p className="hint">
-          Ninguém cadastra link vídeo por vídeo. Rode <code>scripts/sincronizar-videos-onedrive.ps1</code> (uma vez, e
-          de novo quando subir vídeo novo) — ele gera o link certo de cada vídeo automaticamente e salva um arquivo.
-          Clique em <strong>"+ Importar vídeos (JSON)"</strong> acima e escolha esse arquivo para ligar os vídeos aos
-          códigos de uma vez só — a coluna Vídeo muda para "Concluído" sozinha nos códigos importados. Código,
-          máquina, descrição, tempo e método usados nas fichas técnicas vêm direto desta tabela.
+          Clique numa linha para selecioná-la e use "Excluir selecionada" no topo — a exclusão só é permitida se a
+          operação não estiver em uso no roteiro de nenhuma ficha técnica. Clique no ▾ do título de qualquer coluna
+          para filtrar pelos valores dela, como numa planilha do Excel. Ninguém cadastra link vídeo por vídeo. Rode{" "}
+          <code>scripts/sincronizar-videos-onedrive.ps1</code> (uma vez, e de novo quando subir vídeo novo) — ele
+          gera o link certo de cada vídeo automaticamente e salva um arquivo. Clique em{" "}
+          <strong>"+ Importar vídeos (JSON)"</strong> acima e escolha esse arquivo para ligar os vídeos aos códigos de
+          uma vez só — a coluna Vídeo muda para "Concluído" sozinha nos códigos importados. Código, máquina,
+          descrição, tempo e método usados nas fichas técnicas vêm direto desta tabela.
         </p>
       </section>
+
+      {confirmacao && (
+        <div className="modal">
+          <div className="modal-backdrop" onClick={() => setConfirmacao(null)} />
+          <div className="modal-card">
+            <div className="modal-head">
+              <div>
+                <p className="overline">{confirmacao.op.codigo || "Rascunho"}</p>
+                <h2>{confirmacao.usadoEm.length > 0 ? "Não é possível excluir" : "Excluir operação?"}</h2>
+              </div>
+              <button type="button" className="icon-button" onClick={() => setConfirmacao(null)} title="Fechar">
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              {confirmacao.usadoEm.length > 0 ? (
+                <>
+                  <p>
+                    Esta operação está no roteiro d{confirmacao.usadoEm.length === 1 ? "esta ficha técnica" : "estas fichas técnicas"}:
+                  </p>
+                  <ul className="modal-list">
+                    {confirmacao.usadoEm.map((f) => (
+                      <li key={f.id}>
+                        {f.referencia || "(sem referência)"}
+                        {f.descricao ? ` — ${f.descricao}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="hint">Remova a operação do roteiro dessas fichas antes de excluir do catálogo.</p>
+                </>
+              ) : (
+                <p>
+                  Tem certeza que deseja excluir a operação <strong>{confirmacao.op.codigo || "sem código"}</strong>
+                  {confirmacao.op.descricao ? ` — ${confirmacao.op.descricao}` : ""}? Essa ação não pode ser desfeita.
+                </p>
+              )}
+            </div>
+            <div className="modal-foot">
+              {confirmacao.usadoEm.length === 0 ? (
+                <>
+                  <button type="button" className="button button-outline" onClick={() => setConfirmacao(null)}>
+                    Cancelar
+                  </button>
+                  <button type="button" className="button button-primary" onClick={confirmarExclusao}>
+                    Excluir
+                  </button>
+                </>
+              ) : (
+                <button type="button" className="button button-outline" onClick={() => setConfirmacao(null)}>
+                  Entendi
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
