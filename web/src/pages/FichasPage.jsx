@@ -1,9 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
 import FichaForm from "../components/FichaForm/FichaForm";
 import { fichasStore } from "../lib/storage";
-import { supabaseConfigured } from "../lib/supabase";
+import { supabase, supabaseConfigured } from "../lib/supabase";
 import { emptyFicha } from "../data/constants";
 import SearchBox from "../components/SearchBox";
+
+function baixarJson(nomeArquivo, dado) {
+  const blob = new Blob([JSON.stringify(dado, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomeArquivo;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Acha os arquivos do Storage usados por uma ficha, pra apagar junto quando
+// a ficha for excluída (senão a foto fica órfã, ocupando espaço à toa).
+function extrairNomesDeImagens(ficha) {
+  const candidatos = [
+    ficha.desenhoTecnico,
+    ficha.imagensModelagem?.desenhoMedidas,
+    ficha.imagensModelagem?.metodoDeMedir,
+    ficha.imagensModelagem?.localizacaoEtiquetas,
+    ficha.imagensModelagem?.pecaExplodida,
+    ...(ficha.variantes || []).map((v) => v.imagem),
+  ];
+  return candidatos
+    .filter((url) => typeof url === "string" && url.includes("/imagens/"))
+    .map((url) => url.split("/imagens/")[1])
+    .filter(Boolean);
+}
 
 export default function FichasPage() {
   const [fichas, setFichas] = useState([]);
@@ -52,6 +79,62 @@ export default function FichasPage() {
     }
   };
 
+  const handleExportar = (f) => {
+    baixarJson(`ficha-${f.referencia || f.id}.json`, f);
+  };
+
+  const handleExportarTodas = () => {
+    if (fichas.length === 0) {
+      setStatus("Nenhuma ficha para exportar.");
+      return;
+    }
+    baixarJson(`fichas-tecnicas-backup-${new Date().toISOString().slice(0, 10)}.json`, fichas);
+  };
+
+  const handleImportar = async (e) => {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo) return;
+
+    setStatus("Importando...");
+    try {
+      const conteudo = JSON.parse(await arquivo.text());
+      const lista = Array.isArray(conteudo) ? conteudo : [conteudo];
+
+      let importadas = 0;
+      for (const item of lista) {
+        const { id, ...resto } = item;
+        await fichasStore.save(resto);
+        importadas++;
+      }
+      await refresh();
+      setStatus(`${importadas} ficha(s) importada(s).`);
+    } catch (err) {
+      setStatus(`Erro ao importar: ${err.message}`);
+    }
+  };
+
+  const handleExcluir = async (f) => {
+    const ok = window.confirm(
+      `Excluir a ficha "${f.referencia || "(sem referência)"}"? Isso não pode ser desfeito — exporte antes se quiser guardar uma cópia.`
+    );
+    if (!ok) return;
+
+    setStatus("Excluindo...");
+    try {
+      if (supabaseConfigured) {
+        const nomes = extrairNomesDeImagens(f);
+        if (nomes.length) await supabase.storage.from("imagens").remove(nomes);
+      }
+      await fichasStore.remove(f.id);
+      if (ficha.id === f.id) setFicha(emptyFicha());
+      await refresh();
+      setStatus("Ficha excluída.");
+    } catch (err) {
+      setStatus(`Erro ao excluir: ${err.message}`);
+    }
+  };
+
   const fichasFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     if (!termo) return fichas;
@@ -72,6 +155,16 @@ export default function FichasPage() {
           + Nova ficha
         </button>
 
+        <div className="sidebar-actions">
+          <button type="button" className="button button-outline" onClick={handleExportarTodas}>
+            Exportar todas
+          </button>
+          <label className="button button-outline" style={{ cursor: "pointer" }}>
+            Importar (JSON)
+            <input type="file" accept="application/json" onChange={handleImportar} hidden />
+          </label>
+        </div>
+
         <SearchBox value={busca} onChange={setBusca} placeholder="Buscar ficha técnica..." />
 
         {!supabaseConfigured && (
@@ -80,15 +173,30 @@ export default function FichasPage() {
 
         <div className="file-list">
           {fichasFiltradas.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              className={`file-card${f.id === ficha.id ? " active" : ""}`}
-              onClick={() => handleOpen(f.id)}
-            >
-              <div className="file-title">{f.referencia || "(sem referência)"}</div>
-              <div className="file-meta">{f.descricao || "—"}</div>
-            </button>
+            <div key={f.id} className={`file-card${f.id === ficha.id ? " active" : ""}`}>
+              <button type="button" className="file-card-main" onClick={() => handleOpen(f.id)}>
+                <div className="file-title">{f.referencia || "(sem referência)"}</div>
+                <div className="file-meta">{f.descricao || "—"}</div>
+              </button>
+              <div className="file-card-actions">
+                <button
+                  type="button"
+                  className="icon-button tiny icon-button-neutral"
+                  title="Exportar esta ficha"
+                  onClick={() => handleExportar(f)}
+                >
+                  ⬇
+                </button>
+                <button
+                  type="button"
+                  className="icon-button tiny"
+                  title="Excluir esta ficha"
+                  onClick={() => handleExcluir(f)}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
           ))}
           {fichasFiltradas.length === 0 && (
             <p className="muted">{fichas.length === 0 ? "Nenhuma ficha ainda." : "Nenhuma ficha encontrada."}</p>

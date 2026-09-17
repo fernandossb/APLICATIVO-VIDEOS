@@ -359,15 +359,14 @@ textarea {
 }
 
 .file-card {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 2px;
   width: 100%;
   border: 1px solid transparent;
   border-radius: var(--radius);
   background: transparent;
-  color: var(--text);
-  cursor: pointer;
-  padding: 10px;
-  text-align: left;
+  padding: 4px;
 }
 
 .file-card:hover,
@@ -378,6 +377,46 @@ textarea {
 
 .file-card.active {
   box-shadow: inset 3px 0 0 var(--teal);
+}
+
+.file-card-main {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  padding: 6px;
+  text-align: left;
+}
+
+.file-card-actions {
+  display: flex;
+  flex: none;
+  gap: 2px;
+}
+
+.icon-button-neutral {
+  color: var(--muted);
+}
+
+.icon-button-neutral:hover {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: #fff;
+}
+
+.sidebar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.sidebar-actions .button {
+  flex: 1;
+  min-height: 34px;
+  padding: 0 8px;
+  font-size: 12px;
 }
 
 .file-title {
