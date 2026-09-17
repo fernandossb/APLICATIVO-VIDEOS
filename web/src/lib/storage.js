@@ -20,6 +20,7 @@ function createStore(table, toColumns = () => ({})) {
   async function save(record) {
     const id = record.id || crypto.randomUUID();
     const toSave = { ...record, id, atualizadoEm: new Date().toISOString() };
+    if (!toSave.criadoEm) toSave.criadoEm = toSave.atualizadoEm;
 
     if (supabaseConfigured) {
       const { error } = await supabase.from(table).upsert({
@@ -52,10 +53,15 @@ function createStore(table, toColumns = () => ({})) {
     if (supabaseConfigured) {
       const { data, error } = await supabase
         .from(table)
-        .select("id, dados, atualizado_em")
+        .select("id, dados, atualizado_em, criado_em")
         .order("atualizado_em", { ascending: false });
       if (error) throw error;
-      return (data ?? []).map((row) => ({ ...row.dados, id: row.id, atualizadoEm: row.atualizado_em }));
+      return (data ?? []).map((row) => ({
+        ...row.dados,
+        id: row.id,
+        atualizadoEm: row.atualizado_em,
+        criadoEm: row.criado_em,
+      }));
     }
 
     const all = readLocal(table);

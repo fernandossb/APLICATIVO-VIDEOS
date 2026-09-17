@@ -32,15 +32,14 @@ function formatDataHora(iso) {
   });
 }
 
-function compararCodigos(a, b) {
-  const na = Number(a);
-  const nb = Number(b);
-  const aNumerico = a !== "" && Number.isFinite(na);
-  const bNumerico = b !== "" && Number.isFinite(nb);
-  if (aNumerico && bNumerico) return na - nb;
-  if (aNumerico) return -1;
-  if (bNumerico) return 1;
-  return String(a).localeCompare(String(b));
+function baixarJson(nomeArquivo, dado) {
+  const blob = new Blob([JSON.stringify(dado, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomeArquivo;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // Um valor por coluna, usado tanto para montar as opções do filtro quanto para aplicá-lo.
@@ -214,11 +213,50 @@ export default function OperacoesPage() {
   }, []);
 
   const handleNovaLinha = () => {
-    const nova = { ...emptyOperacao(), id: crypto.randomUUID() };
-    setOperacoes((lista) => [nova, ...lista]);
+    const nova = { ...emptyOperacao(), id: crypto.randomUUID(), criadoEm: new Date().toISOString() };
+    setOperacoes((lista) => [...lista, nova]);
     setRascunhoIds((set) => new Set(set).add(nova.id));
     setSelecionadoId(nova.id);
     setStatus("");
+  };
+
+  const handleExportarTodas = () => {
+    if (operacoes.length === 0) {
+      setStatus("Nenhuma operação para exportar.");
+      return;
+    }
+    baixarJson(`banco-operacoes-backup-${new Date().toISOString().slice(0, 10)}.json`, operacoes);
+  };
+
+  const handleExportarSelecionada = () => {
+    const op = operacoes.find((o) => o.id === selecionadoId);
+    if (!op) return;
+    baixarJson(`operacao-${op.codigo || op.id}.json`, op);
+  };
+
+  const handleImportar = async (e) => {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo) return;
+
+    setStatus("Importando...");
+    try {
+      const conteudo = JSON.parse(await arquivo.text());
+      const lista = Array.isArray(conteudo) ? conteudo : [conteudo];
+
+      let importadas = 0;
+      for (const item of lista) {
+        const { id, ...resto } = item;
+        const codigo = String(resto.codigo || "").trim();
+        const existente = codigo ? operacoesRef.current.find((op) => op.codigo === codigo) : null;
+        await operacoesStore.save(existente ? { ...resto, id: existente.id } : resto);
+        importadas++;
+      }
+      await operacoesStore.list().then(setOperacoes);
+      setStatus(`${importadas} operação(ões) importada(s).`);
+    } catch (err) {
+      setStatus(`Erro ao importar: ${err.message}`);
+    }
   };
 
   const handleImportarVideos = async (e) => {
@@ -313,13 +351,12 @@ export default function OperacoesPage() {
     });
   }, []);
 
+  // Tabela: linha nova entra só no final, e fica nessa posição pra sempre —
+  // edições não reordenam nada. Por isso ordena pela data de criação, não
+  // pelo código nem pela última alteração.
   const linhasOrdenadas = useMemo(() => {
-    const rascunhos = operacoes.filter((op) => rascunhoIds.has(op.id));
-    const restantes = operacoes
-      .filter((op) => !rascunhoIds.has(op.id))
-      .sort((a, b) => compararCodigos(a.codigo, b.codigo));
-    return [...rascunhos, ...restantes];
-  }, [operacoes, rascunhoIds]);
+    return [...operacoes].sort((a, b) => (a.criadoEm || "").localeCompare(b.criadoEm || ""));
+  }, [operacoes]);
 
   const linhasFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -372,6 +409,21 @@ export default function OperacoesPage() {
             >
               Excluir selecionada
             </button>
+            <button
+              type="button"
+              className="button button-outline"
+              disabled={!selecionadoId}
+              onClick={handleExportarSelecionada}
+            >
+              Exportar selecionada
+            </button>
+            <button type="button" className="button button-outline" onClick={handleExportarTodas}>
+              Exportar todas
+            </button>
+            <label className="button button-outline" style={{ cursor: "pointer" }}>
+              Importar (JSON)
+              <input type="file" accept="application/json" onChange={handleImportar} hidden />
+            </label>
             <label className="button button-outline" style={{ cursor: "pointer" }}>
               + Importar vídeos (JSON)
               <input type="file" accept="application/json" onChange={handleImportarVideos} hidden />

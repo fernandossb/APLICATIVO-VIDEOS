@@ -2,7 +2,7 @@ import { useState } from "react";
 import { signIn } from "../lib/auth";
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("");
+  const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -11,9 +11,9 @@ export default function LoginScreen() {
     e.preventDefault();
     setErro("");
     setEnviando(true);
-    const { error } = await signIn(email, senha);
+    const { error } = await signIn(usuario, senha);
     setEnviando(false);
-    if (error) setErro("E-mail ou senha inválidos.");
+    if (error) setErro("Usuário ou senha inválidos.");
   };
 
   return (
@@ -21,14 +21,15 @@ export default function LoginScreen() {
       <form className="login-card" onSubmit={handleSubmit}>
         <div className="brand-mark login-brand-mark">CF</div>
         <h1>CosturaFlow</h1>
-        <p className="muted">Entre com sua conta para acessar</p>
+        <p className="muted">Entre com seu usuário para acessar</p>
 
         <label className="login-field">
-          E-mail
+          Usuário
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            value={usuario}
+            onChange={(e) => setUsuario(e.target.value)}
+            placeholder="nome.sobrenome"
             autoComplete="username"
             required
             autoFocus

@@ -29,7 +29,25 @@ Enquanto não configurado, o app roda em modo local (item acima). Para salvar de
 
 5. Reinicie `npm run dev`. O aviso de "modo local" some e os salvamentos passam a ir para o Supabase.
 
-O `schema.sql` cria a tabela `fichas` com uma coluna `jsonb` guardando a ficha inteira — simples de manter agora, e ainda assim consultável (índice GIN já incluído). As políticas de acesso (RLS) hoje liberam qualquer usuário autenticado; ficam mais finas quando o login por perfil (plano, item 05) entrar.
+O `schema.sql` cria a tabela `fichas` com uma coluna `jsonb` guardando a ficha inteira — simples de manter agora, e ainda assim consultável (índice GIN já incluído). As políticas de acesso (RLS) exigem usuário autenticado — veja "Login e usuários" abaixo.
+
+## Login e usuários
+
+O acesso é por usuário (`nome.sobrenome`) e senha, não e-mail — por baixo é Supabase Auth, usando um domínio interno (`@costuraflow.local`) que nunca recebe mensagem de verdade.
+
+**Criar o primeiro administrador** (precisa ser feito uma vez, direto no painel do Supabase):
+
+1. Rode também [`supabase/capacidade.sql`](./supabase/capacidade.sql) e [`supabase/auth.sql`](./supabase/auth.sql) no SQL Editor (nessa ordem, depois de `schema.sql` e `storage.sql`).
+2. Em **Authentication → Users → Add user**, crie com e-mail `nome.sobrenome@costuraflow.local`, uma senha, e marque **Auto Confirm User**.
+3. No **SQL Editor**, rode (trocando o e-mail):
+   ```sql
+   update auth.users
+   set raw_app_meta_data = raw_app_meta_data || '{"role":"admin"}'::jsonb
+   where email = 'nome.sobrenome@costuraflow.local';
+   ```
+4. Em **Project Settings → Environment Variables** (ou nas variáveis de ambiente do Netlify, se for lá que o deploy publica), copie a **service_role key** (Project Settings → API) para uma variável `SUPABASE_SERVICE_ROLE_KEY`. **Nunca** coloque essa chave com o prefixo `VITE_` nem no `.env` do navegador — ela dá acesso total ao banco e só pode existir no lado do servidor (a função `netlify/functions/admin-usuarios.mjs` é quem usa).
+
+Depois de logado como administrador, aparece um menu **Administração → Usuários** para criar/excluir os próximos acessos direto pela tela, sem precisar do painel do Supabase.
 
 ## Vídeo por código, sem cadastrar link (caminho atual)
 
@@ -66,5 +84,5 @@ no `.env` (veja os comentários dentro do próprio arquivo `.env.example`). Enqu
 
 ## O que ainda falta (fora do escopo deste primeiro corte)
 
-- Login e permissão por perfil (fase 01/05).
+- Permissão por perfil dentro do login (hoje é só admin/usuário — telas visíveis são as mesmas, sem restrição por setor).
 - Migração das fichas que já existem em `G:\Ficha Técnica`.

@@ -5,7 +5,8 @@ import QualidadeDashboardPage from "./pages/QualidadeDashboardPage";
 import InspecoesPage from "./pages/InspecoesPage";
 import LoginScreen from "./components/LoginScreen";
 import CapacidadeIndicador from "./components/CapacidadeIndicador";
-import { getSession, onAuthStateChange, signOut } from "./lib/auth";
+import AdminUsuariosPage from "./components/AdminUsuariosPage";
+import { getSession, onAuthStateChange, signOut, ehAdmin, emailParaUsuario } from "./lib/auth";
 import { supabaseConfigured } from "./lib/supabase";
 import { NAV } from "./data/constants";
 
@@ -14,6 +15,7 @@ const PAGES = {
   "banco-operacoes": OperacoesPage,
   "qualidade-dashboard": QualidadeDashboardPage,
   "qualidade-inspecoes": InspecoesPage,
+  "admin-usuarios": AdminUsuariosPage,
 };
 
 export default function App() {
@@ -34,6 +36,8 @@ export default function App() {
   if (!sessao && supabaseConfigured) {
     return <LoginScreen />;
   }
+
+  const admin = ehAdmin(sessao);
 
   return (
     <div className="app-shell">
@@ -62,11 +66,24 @@ export default function App() {
           </div>
         ))}
 
+        {admin && (
+          <div className="nav-group">
+            <span className="nav-group-label">Administração</span>
+            <button
+              type="button"
+              className={`nav-item${view === "admin-usuarios" ? " active" : ""}`}
+              onClick={() => setView("admin-usuarios")}
+            >
+              Usuários
+            </button>
+          </div>
+        )}
+
         <div className="nav-footer">
           <CapacidadeIndicador />
           {sessao && (
             <div className="nav-user">
-              <span title={sessao.user.email}>{sessao.user.email}</span>
+              <span title={sessao.user.email}>{emailParaUsuario(sessao.user.email)}</span>
               <button type="button" onClick={signOut}>
                 Sair
               </button>

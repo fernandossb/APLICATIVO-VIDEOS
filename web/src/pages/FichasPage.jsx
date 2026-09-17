@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import FichaForm from "../components/FichaForm/FichaForm";
 import { fichasStore } from "../lib/storage";
 import { supabase, supabaseConfigured } from "../lib/supabase";
-import { embutirImagens, rehospedarImagens } from "../lib/imagensFicha";
+import { embutirImagensDaFicha, nomesDeImagensDaFicha, rehospedarImagensDaFicha } from "../lib/imagens";
 import { emptyFicha } from "../data/constants";
 import SearchBox from "../components/SearchBox";
 
@@ -16,21 +16,10 @@ function baixarJson(nomeArquivo, dado) {
   URL.revokeObjectURL(url);
 }
 
-// Acha os arquivos do Storage usados por uma ficha, pra apagar junto quando
-// a ficha for excluída (senão a foto fica órfã, ocupando espaço à toa).
-function extrairNomesDeImagens(ficha) {
-  const candidatos = [
-    ficha.desenhoTecnico,
-    ficha.imagensModelagem?.desenhoMedidas,
-    ficha.imagensModelagem?.metodoDeMedir,
-    ficha.imagensModelagem?.localizacaoEtiquetas,
-    ficha.imagensModelagem?.pecaExplodida,
-    ...(ficha.variantes || []).map((v) => v.imagem),
-  ];
-  return candidatos
-    .filter((url) => typeof url === "string" && url.includes("/imagens/"))
-    .map((url) => url.split("/imagens/")[1])
-    .filter(Boolean);
+function unicos(lista, campo) {
+  return Array.from(new Set(lista.map((f) => f[campo]).filter(Boolean))).sort((a, b) =>
+    a.localeCompare(b, "pt-BR")
+  );
 }
 
 export default function FichasPage() {
@@ -38,6 +27,7 @@ export default function FichasPage() {
   const [ficha, setFicha] = useState(emptyFicha());
   const [status, setStatus] = useState("");
   const [busca, setBusca] = useState("");
+  const [filtroColecao, setFiltroColecao] = useState("");
 
   const refresh = async () => {
     try {
@@ -83,7 +73,7 @@ export default function FichasPage() {
   const handleExportar = async (f) => {
     setStatus("Preparando exportação...");
     try {
-      const comImagens = await embutirImagens(f);
+      const comImagens = await embutirImagensDaFicha(f);
       baixarJson(`ficha-${f.referencia || f.id}.json`, comImagens);
       setStatus("");
     } catch (err) {
@@ -98,7 +88,7 @@ export default function FichasPage() {
     }
     setStatus("Preparando exportação...");
     try {
-      const todasComImagens = await Promise.all(fichas.map(embutirImagens));
+      const todasComImagens = await Promise.all(fichas.map(embutirImagensDaFicha));
       baixarJson(`fichas-tecnicas-backup-${new Date().toISOString().slice(0, 10)}.json`, todasComImagens);
       setStatus("");
     } catch (err) {
@@ -119,7 +109,7 @@ export default function FichasPage() {
       let importadas = 0;
       for (const item of lista) {
         const { id, ...resto } = item;
-        const comImagensRehospedadas = await rehospedarImagens(resto);
+        const comImagensRehospedadas = await rehospedarImagensDaFicha(resto);
         await fichasStore.save(comImagensRehospedadas);
         importadas++;
       }
@@ -139,7 +129,7 @@ export default function FichasPage() {
     setStatus("Excluindo...");
     try {
       if (supabaseConfigured) {
-        const nomes = extrairNomesDeImagens(f);
+        const nomes = nomesDeImagensDaFicha(f);
         if (nomes.length) await supabase.storage.from("imagens").remove(nomes);
       }
       await fichasStore.remove(f.id);
@@ -151,13 +141,21 @@ export default function FichasPage() {
     }
   };
 
+  const colecoes = useMemo(() => unicos(fichas, "colecao"), [fichas]);
+
   const fichasFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    if (!termo) return fichas;
-    return fichas.filter((f) =>
-      [f.referencia, f.descricao, f.colecao].some((campo) => String(campo || "").toLowerCase().includes(termo))
-    );
-  }, [fichas, busca]);
+    return fichas.filter((f) => {
+      if (termo) {
+        const combina = [f.referencia, f.descricao, f.colecao].some((campo) =>
+          String(campo || "").toLowerCase().includes(termo)
+        );
+        if (!combina) return false;
+      }
+      if (filtroColecao && f.colecao !== filtroColecao) return false;
+      return true;
+    });
+  }, [fichas, busca, filtroColecao]);
 
   return (
     <>
@@ -182,6 +180,17 @@ export default function FichasPage() {
         </div>
 
         <SearchBox value={busca} onChange={setBusca} placeholder="Buscar ficha técnica..." />
+
+        <div className="sidebar-filters">
+          <select value={filtroColecao} onChange={(e) => setFiltroColecao(e.target.value)}>
+            <option value="">Todas as coleções</option>
+            {colecoes.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {!supabaseConfigured && (
           <p className="hint">Modo local: as fichas ficam salvas neste navegador até o Supabase ser configurado.</p>

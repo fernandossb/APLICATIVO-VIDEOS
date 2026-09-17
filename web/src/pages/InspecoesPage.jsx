@@ -1,16 +1,35 @@
 import { useEffect, useMemo, useState } from "react";
 import { inspecoesStore } from "../lib/storage";
-import { supabaseConfigured } from "../lib/supabase";
+import { supabase, supabaseConfigured } from "../lib/supabase";
+import { embutirImagemUnica, nomeDoArquivoNoBucket, rehospedarImagemUnica } from "../lib/imagens";
 import { calcPercentuais, formatPercentual } from "../lib/qualidadeMetrics";
 import { causasDefeito, emptyInspecao, statusInspecao } from "../data/constants";
 import ImageSlot from "../components/FichaForm/ImageSlot";
 import SearchBox from "../components/SearchBox";
+
+function baixarJson(nomeArquivo, dado) {
+  const blob = new Blob([JSON.stringify(dado, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomeArquivo;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function unicos(lista, campo) {
+  return Array.from(new Set(lista.map((i) => i[campo]).filter(Boolean))).sort((a, b) =>
+    a.localeCompare(b, "pt-BR")
+  );
+}
 
 export default function InspecoesPage() {
   const [inspecoes, setInspecoes] = useState([]);
   const [inspecao, setInspecao] = useState(emptyInspecao());
   const [status, setStatus] = useState("");
   const [busca, setBusca] = useState("");
+  const [filtroFornecedor, setFiltroFornecedor] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("");
 
   const refresh = async () => {
     try {
@@ -54,9 +73,69 @@ export default function InspecoesPage() {
 
   const handleRemove = async () => {
     if (!inspecao.id) return;
-    await inspecoesStore.remove(inspecao.id);
-    await refresh();
-    handleNew();
+    try {
+      if (supabaseConfigured) {
+        const nome = nomeDoArquivoNoBucket(inspecao.fotoUrl);
+        if (nome) await supabase.storage.from("imagens").remove([nome]);
+      }
+      await inspecoesStore.remove(inspecao.id);
+      await refresh();
+      handleNew();
+    } catch (err) {
+      setStatus(`Erro ao excluir: ${err.message}`);
+    }
+  };
+
+  const handleExportar = async (item) => {
+    setStatus("Preparando exportação...");
+    try {
+      const comFoto = { ...item, fotoUrl: await embutirImagemUnica(item.fotoUrl) };
+      baixarJson(`inspecao-${item.referencia || item.id}.json`, comFoto);
+      setStatus("");
+    } catch (err) {
+      setStatus(`Erro ao exportar: ${err.message}`);
+    }
+  };
+
+  const handleExportarTodas = async () => {
+    if (inspecoes.length === 0) {
+      setStatus("Nenhuma inspeção para exportar.");
+      return;
+    }
+    setStatus("Preparando exportação...");
+    try {
+      const todasComFoto = await Promise.all(
+        inspecoes.map(async (i) => ({ ...i, fotoUrl: await embutirImagemUnica(i.fotoUrl) }))
+      );
+      baixarJson(`inspecoes-backup-${new Date().toISOString().slice(0, 10)}.json`, todasComFoto);
+      setStatus("");
+    } catch (err) {
+      setStatus(`Erro ao exportar: ${err.message}`);
+    }
+  };
+
+  const handleImportar = async (e) => {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo) return;
+
+    setStatus("Importando...");
+    try {
+      const conteudo = JSON.parse(await arquivo.text());
+      const lista = Array.isArray(conteudo) ? conteudo : [conteudo];
+
+      let importadas = 0;
+      for (const item of lista) {
+        const { id, ...resto } = item;
+        resto.fotoUrl = await rehospedarImagemUnica(resto.fotoUrl);
+        await inspecoesStore.save(resto);
+        importadas++;
+      }
+      await refresh();
+      setStatus(`${importadas} inspeção(ões) importada(s).`);
+    } catch (err) {
+      setStatus(`Erro ao importar: ${err.message}`);
+    }
   };
 
   const toggleCausaAdicional = (causa) => {
@@ -67,15 +146,22 @@ export default function InspecoesPage() {
 
   const percentuais = calcPercentuais(inspecao);
 
+  const fornecedores = useMemo(() => unicos(inspecoes, "fornecedor"), [inspecoes]);
+
   const inspecoesFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    if (!termo) return inspecoes;
-    return inspecoes.filter((i) =>
-      [i.fornecedor, i.produto, i.referencia, i.inspetora, i.op].some((campo) =>
-        String(campo || "").toLowerCase().includes(termo)
-      )
-    );
-  }, [inspecoes, busca]);
+    return inspecoes.filter((i) => {
+      if (termo) {
+        const combina = [i.fornecedor, i.produto, i.referencia, i.inspetora, i.op].some((campo) =>
+          String(campo || "").toLowerCase().includes(termo)
+        );
+        if (!combina) return false;
+      }
+      if (filtroFornecedor && i.fornecedor !== filtroFornecedor) return false;
+      if (filtroStatus && i.status !== filtroStatus) return false;
+      return true;
+    });
+  }, [inspecoes, busca, filtroFornecedor, filtroStatus]);
 
   return (
     <>
@@ -89,7 +175,36 @@ export default function InspecoesPage() {
           + Nova inspeção
         </button>
 
+        <div className="sidebar-actions">
+          <button type="button" className="button button-outline" onClick={handleExportarTodas}>
+            Exportar todas
+          </button>
+          <label className="button button-outline" style={{ cursor: "pointer" }}>
+            Importar (JSON)
+            <input type="file" accept="application/json" onChange={handleImportar} hidden />
+          </label>
+        </div>
+
         <SearchBox value={busca} onChange={setBusca} placeholder="Buscar por fornecedor, produto, OP..." />
+
+        <div className="sidebar-filters">
+          <select value={filtroFornecedor} onChange={(e) => setFiltroFornecedor(e.target.value)}>
+            <option value="">Todos os fornecedores</option>
+            {fornecedores.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+          <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
+            <option value="">Todos os status</option>
+            {statusInspecao.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {!supabaseConfigured && (
           <p className="hint">Modo local: as inspeções ficam salvas neste navegador até o Supabase ser configurado.</p>
@@ -97,17 +212,26 @@ export default function InspecoesPage() {
 
         <div className="file-list">
           {inspecoesFiltradas.map((i) => (
-            <button
-              key={i.id}
-              type="button"
-              className={`file-card${i.id === inspecao.id ? " active" : ""}`}
-              onClick={() => handleOpen(i)}
-            >
-              <div className="file-title">{i.fornecedor || "(sem fornecedor)"} · {i.produto || "—"}</div>
-              <div className="file-meta">
-                {i.dataInspecao || "sem data"} · {i.status}
+            <div key={i.id} className={`file-card${i.id === inspecao.id ? " active" : ""}`}>
+              <button type="button" className="file-card-main" onClick={() => handleOpen(i)}>
+                <div className="file-title">
+                  {i.fornecedor || "(sem fornecedor)"} · {i.produto || "—"}
+                </div>
+                <div className="file-meta">
+                  {i.dataInspecao || "sem data"} · {i.status}
+                </div>
+              </button>
+              <div className="file-card-actions">
+                <button
+                  type="button"
+                  className="icon-button tiny icon-button-neutral"
+                  title="Exportar esta inspeção"
+                  onClick={() => handleExportar(i)}
+                >
+                  ⬇
+                </button>
               </div>
-            </button>
+            </div>
           ))}
           {inspecoesFiltradas.length === 0 && <p className="muted">Nenhuma inspeção encontrada.</p>}
         </div>
