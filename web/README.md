@@ -71,9 +71,12 @@ Roteiro da ficha, o botão ▶ mostra a lista (numerada "Vídeo 1", "Vídeo 2"..
 
 Existe também `netlify/functions/videos-por-codigo.mjs`, pronta para buscar os vídeos **ao vivo** a cada clique — sem
 nem precisar rodar o script acima. Ela só entra em ação sozinha se alguém com acesso de administrador do Microsoft
-365 registrar um aplicativo no Azure/Entra e preencher `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID` e `GRAPH_CLIENT_SECRET`
-no `.env` (veja os comentários dentro do próprio arquivo `.env.example`). Enquanto essas variáveis não existirem, o
-▶ usa automaticamente a lista importada pelo script acima — nada quebra, é só uma camada a mais para o futuro.
+365 registrar um aplicativo no Azure/Entra e configurar `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`, `GRAPH_CLIENT_SECRET` e
+`GRAPH_DRIVE_USER` **nas variáveis de ambiente do site no Netlify** (Site configuration → Environment variables, ou
+via `netlify env:set` — não basta colocar no `.env` do projeto, porque esse arquivo só é lido pelo Vite no seu
+computador; a função que roda no site publicado lê as variáveis do próprio Netlify). Enquanto essas variáveis não
+existirem, o ▶ usa automaticamente a lista importada pelo script acima — nada quebra, é só uma camada a mais para
+o futuro.
 
 ## O que já está aqui
 
