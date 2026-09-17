@@ -27,7 +27,7 @@ function OperacaoRow({ row, info, tempo, onChangeCodigo, onChangeObservacao, onU
         <input list="operacoes-catalogo" value={row.codigo} onChange={onChangeCodigo} placeholder="10004" />
       </td>
       <td className="from-catalog">{info?.grupoMaquina || (naoCadastrada ? "—" : "")}</td>
-      <td className="from-catalog">
+      <td className="from-catalog col-desc">
         {info?.descricao || (naoCadastrada ? "não cadastrada no Banco de Operações" : "")}
       </td>
       <td>
@@ -154,7 +154,7 @@ export default function RoteiroTab({ ficha, update }) {
             <tr>
               <th className="col-code">Código</th>
               <th className="col-group">Máquina</th>
-              <th>Descrição da operação</th>
+              <th className="col-desc">Descrição da operação</th>
               <th>Observação</th>
               <th className="col-time">Tempo ({grupoTecido})</th>
               <th>Método</th>

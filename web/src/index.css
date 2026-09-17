@@ -436,22 +436,78 @@ textarea {
   margin-bottom: 24px;
 }
 
-.file-title {
-  overflow: hidden;
+/* galeria de colecoes (tela inicial da ficha tecnica) */
+.sidebar-back {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--teal);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar-back:hover {
+  text-decoration: underline;
+}
+
+.colecoes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 6cm);
+  gap: 20px;
+}
+
+.colecao-card {
+  display: flex;
+  width: 6cm;
+  min-height: 6cm;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 16px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.colecao-card:hover {
+  border-color: var(--teal);
+  box-shadow: var(--shadow);
+}
+
+.colecao-card strong {
+  overflow-wrap: break-word;
+  font-size: 17px;
+  color: var(--teal-dark);
+}
+
+.colecao-card span {
+  color: var(--muted);
   font-size: 13px;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.colecao-card-todas {
+  border-color: var(--teal-dark);
+  background: var(--teal-soft);
+}
+
+.file-title {
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: break-word;
 }
 
 .file-meta {
   display: block;
-  overflow: hidden;
   margin-top: 3px;
   color: var(--muted);
   font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
 }
 
 .muted {
@@ -500,6 +556,7 @@ textarea {
   margin: 0;
   font-size: 21px;
   line-height: 1.2;
+  overflow-wrap: break-word;
 }
 
 .topbar-actions {
@@ -1015,6 +1072,12 @@ tr.stage-row input {
 
 .banco-table-wrap table {
   min-width: 1200px;
+}
+
+.col-desc {
+  max-width: 420px;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .banco-table-wrap .col-desc {

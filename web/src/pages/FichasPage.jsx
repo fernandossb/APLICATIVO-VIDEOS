@@ -16,9 +16,52 @@ function baixarJson(nomeArquivo, dado) {
   URL.revokeObjectURL(url);
 }
 
-function unicos(lista, campo) {
-  return Array.from(new Set(lista.map((f) => f[campo]).filter(Boolean))).sort((a, b) =>
-    a.localeCompare(b, "pt-BR")
+// sentinela pra "ver tudo, sem filtrar por coleção" — diferente de "" (sem coleção) e de null (galeria)
+const TODAS = "__todas__";
+
+function ColecoesGrid({ grupos, total, onSelecionar, onNovaFicha }) {
+  return (
+    <main className="workspace">
+      <header className="topbar">
+        <div className="sheet-header-inline">
+          <p className="overline">Ficha técnica</p>
+          <h1>Coleções</h1>
+        </div>
+        <div className="topbar-actions">
+          <button type="button" className="button button-primary" onClick={onNovaFicha}>
+            + Nova ficha
+          </button>
+        </div>
+      </header>
+
+      <section className="content-panel content-panel-wide">
+        {total === 0 ? (
+          <p className="muted">Nenhuma ficha cadastrada ainda — clique em "+ Nova ficha" para começar.</p>
+        ) : (
+          <div className="colecoes-grid">
+            <button type="button" className="colecao-card colecao-card-todas" onClick={() => onSelecionar(TODAS)}>
+              <strong>Todas as fichas</strong>
+              <span>
+                {total} {total === 1 ? "ficha" : "fichas"}
+              </span>
+            </button>
+            {grupos.map((g) => (
+              <button
+                type="button"
+                className="colecao-card"
+                key={g.colecao || "__sem__"}
+                onClick={() => onSelecionar(g.colecao)}
+              >
+                <strong>{g.colecao || "(Sem coleção)"}</strong>
+                <span>
+                  {g.quantidade} {g.quantidade === 1 ? "ficha" : "fichas"}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
   );
 }
 
@@ -27,7 +70,7 @@ export default function FichasPage() {
   const [ficha, setFicha] = useState(emptyFicha());
   const [status, setStatus] = useState("");
   const [busca, setBusca] = useState("");
-  const [filtroColecao, setFiltroColecao] = useState("");
+  const [colecaoAtual, setColecaoAtual] = useState(null);
 
   const refresh = async () => {
     try {
@@ -42,6 +85,28 @@ export default function FichasPage() {
   }, []);
 
   const handleNew = () => {
+    const colecaoInicial = colecaoAtual && colecaoAtual !== TODAS ? colecaoAtual : "";
+    setFicha({ ...emptyFicha(), colecao: colecaoInicial });
+    setStatus("");
+  };
+
+  // troca de coleção sempre limpa a busca, senão um termo digitado numa coleção
+  // pode esconder fichas de outra sem motivo aparente. Se a ficha aberta não for
+  // da coleção pra onde estamos indo, limpa o formulário — senão a barra lateral
+  // mostraria uma coleção e o formulário, uma ficha de outra completamente diferente.
+  const irParaColecao = (c) => {
+    setColecaoAtual(c);
+    setBusca("");
+    if (c === null) return; // voltando pra galeria — o formulário nem aparece, deixa a ficha como está
+    const pertenceAColecao = c === TODAS || (ficha.colecao || "") === c;
+    if (!pertenceAColecao) {
+      setFicha({ ...emptyFicha(), colecao: c });
+      setStatus("");
+    }
+  };
+
+  const handleNovaFichaDaGaleria = () => {
+    irParaColecao(TODAS);
     setFicha(emptyFicha());
     setStatus("");
   };
@@ -141,28 +206,57 @@ export default function FichasPage() {
     }
   };
 
-  const colecoes = useMemo(() => unicos(fichas, "colecao"), [fichas]);
+  const gruposColecao = useMemo(() => {
+    const contagem = new Map();
+    for (const f of fichas) {
+      const chave = f.colecao || "";
+      contagem.set(chave, (contagem.get(chave) || 0) + 1);
+    }
+    return Array.from(contagem, ([colecao, quantidade]) => ({ colecao, quantidade })).sort((a, b) => {
+      if (!a.colecao) return 1;
+      if (!b.colecao) return -1;
+      return a.colecao.localeCompare(b.colecao, "pt-BR");
+    });
+  }, [fichas]);
 
   const fichasFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return fichas.filter((f) => {
+      if (colecaoAtual !== null && colecaoAtual !== TODAS && (f.colecao || "") !== colecaoAtual) return false;
       if (termo) {
         const combina = [f.referencia, f.descricao, f.colecao].some((campo) =>
           String(campo || "").toLowerCase().includes(termo)
         );
         if (!combina) return false;
       }
-      if (filtroColecao && f.colecao !== filtroColecao) return false;
       return true;
     });
-  }, [fichas, busca, filtroColecao]);
+  }, [fichas, busca, colecaoAtual]);
+
+  const tituloColecaoAtual =
+    colecaoAtual === TODAS ? "Todas as fichas" : colecaoAtual ? colecaoAtual : "(Sem coleção)";
+
+  if (colecaoAtual === null) {
+    return (
+      <ColecoesGrid
+        grupos={gruposColecao}
+        total={fichas.length}
+        onSelecionar={irParaColecao}
+        onNovaFicha={handleNovaFichaDaGaleria}
+      />
+    );
+  }
 
   return (
     <>
       <aside className="sidebar">
+        <button type="button" className="sidebar-back" onClick={() => irParaColecao(null)}>
+          ← Coleções
+        </button>
+
         <div className="sidebar-head">
-          <strong>Fichas técnicas</strong>
-          <span className="count-pill">{fichas.length}</span>
+          <strong>{tituloColecaoAtual}</strong>
+          <span className="count-pill">{fichasFiltradas.length}</span>
         </div>
 
         <button type="button" className="button button-primary full-width" onClick={handleNew}>
@@ -180,17 +274,6 @@ export default function FichasPage() {
         </div>
 
         <SearchBox value={busca} onChange={setBusca} placeholder="Buscar ficha técnica..." />
-
-        <div className="sidebar-filters">
-          <select value={filtroColecao} onChange={(e) => setFiltroColecao(e.target.value)}>
-            <option value="">Todas as coleções</option>
-            {colecoes.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
 
         {!supabaseConfigured && (
           <p className="hint">Modo local: as fichas ficam salvas neste navegador até o Supabase ser configurado.</p>
