@@ -20,6 +20,8 @@ alter policy "inspecoes_delete_authenticated" on public.inspecoes using (auth.ro
 -- estiver logado pode enviar ou apagar.
 drop policy if exists "imagens_insert_public" on storage.objects;
 drop policy if exists "imagens_delete_public" on storage.objects;
+drop policy if exists "imagens_insert_authenticated" on storage.objects;
+drop policy if exists "imagens_delete_authenticated" on storage.objects;
 
 create policy "imagens_insert_authenticated" on storage.objects
   for insert with check (bucket_id = 'imagens' and auth.role() = 'authenticated');
