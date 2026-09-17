@@ -64,16 +64,13 @@ export default function RoteiroTab({ ficha, update }) {
   const [catalogo, setCatalogo] = useState([]);
   const [picker, setPicker] = useState(null);
 
-  // Abre o vídeo direto quando só tem um; com mais de um, mostra a lista pra escolher.
-  // Os vídeos vêm do cadastro da operação (link colado à mão, importado do OneDrive ou
-  // achado ao vivo pelo "Verificar vídeos" — tanto faz a origem, todos caem no mesmo campo).
+  // Toca o vídeo direto (dentro do próprio site) quando só tem um; com mais de um,
+  // mostra a lista pra escolher primeiro. Os vídeos vêm do cadastro da operação (link
+  // colado à mão, importado do OneDrive ou achado ao vivo pelo "Verificar vídeos" —
+  // tanto faz a origem, todos caem no mesmo campo).
   const handlePlay = (codigo, descricao, videos) => {
     const lista = videos || [];
-    if (lista.length === 1) {
-      window.open(lista[0].url, "_blank", "noopener,noreferrer");
-      return;
-    }
-    setPicker({ codigo, descricao, videos: lista });
+    setPicker({ codigo, descricao, videos: lista, tocando: lista.length === 1 ? lista[0] : null });
   };
 
   useEffect(() => {
@@ -243,6 +240,8 @@ export default function RoteiroTab({ ficha, update }) {
           codigo={picker.codigo}
           descricao={picker.descricao}
           videos={picker.videos}
+          tocando={picker.tocando}
+          onSelecionar={(v) => setPicker({ ...picker, tocando: v })}
           onClose={() => setPicker(null)}
         />
       )}

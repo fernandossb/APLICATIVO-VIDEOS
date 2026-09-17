@@ -1940,24 +1940,42 @@ tr.code-missing .from-catalog {
   margin-top: 4px;
 }
 
-.video-picker-list a {
+.video-picker-list button {
   display: flex;
+  width: 100%;
   align-items: center;
   gap: 12px;
+  border: none;
   border-radius: var(--radius);
+  background: transparent;
   padding: 10px 12px;
   color: var(--text);
-  text-decoration: none;
+  text-align: left;
   font-size: 14px;
   font-weight: 600;
+  cursor: pointer;
 }
 
-.video-picker-list a:hover {
+.video-picker-list button:hover {
   background: var(--surface-soft);
 }
 
 .video-picker-list .play-button {
   pointer-events: none;
+}
+
+.video-player-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+.video-player-wrap video {
+  width: 100%;
+  max-height: 60vh;
+  border-radius: var(--radius);
+  background: #000;
 }
 
 @media (max-width: 860px) {
