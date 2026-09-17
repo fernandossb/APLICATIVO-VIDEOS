@@ -823,6 +823,23 @@ label.full-width {
   text-transform: uppercase;
 }
 
+.video-links-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.video-link-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.video-link-row input {
+  flex: 1;
+}
+
 /* editable list tables (capa status, comentarios) */
 .edit-table {
   border: 1px solid var(--line);
@@ -1045,6 +1062,12 @@ tbody tr:last-child td {
   border-color: var(--teal);
   background: var(--teal);
   color: #fff;
+}
+
+.play-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 tr.stage-row {

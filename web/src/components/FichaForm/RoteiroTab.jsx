@@ -21,6 +21,7 @@ function RowActions({ onUp, onDown, onRemove }) {
 
 function OperacaoRow({ row, info, tempo, onChangeCodigo, onChangeObservacao, onUp, onDown, onRemove, onPlay }) {
   const naoCadastrada = row.codigo && !info;
+  const temVideo = (info?.videos?.length || 0) > 0;
   return (
     <tr className={naoCadastrada ? "code-missing" : ""}>
       <td>
@@ -37,7 +38,13 @@ function OperacaoRow({ row, info, tempo, onChangeCodigo, onChangeObservacao, onU
       <td className="from-catalog">{info?.metodo || ""}</td>
       <td className="col-video">
         {row.codigo ? (
-          <button type="button" className="play-button" onClick={onPlay} title="Buscar vídeos desta operação">
+          <button
+            type="button"
+            className="play-button"
+            onClick={onPlay}
+            disabled={!temVideo}
+            title={temVideo ? "Assistir vídeo desta operação" : "Nenhum vídeo cadastrado para este código"}
+          >
             ▶
           </button>
         ) : (
@@ -57,26 +64,16 @@ export default function RoteiroTab({ ficha, update }) {
   const [catalogo, setCatalogo] = useState([]);
   const [picker, setPicker] = useState(null);
 
-  const buscarVideos = async (codigo, descricao, videosImportados) => {
-    setPicker({ codigo, descricao, status: "carregando", videos: [] });
-
-    // Tenta a busca ao vivo no OneDrive (se a integração com o Graph estiver configurada);
-    // se não estiver, cai para a lista trazida pela importação do sincronizar-videos-onedrive.ps1.
-    try {
-      const res = await fetch(`/api/videos-por-codigo?codigo=${encodeURIComponent(codigo)}`);
-      const ehJson = (res.headers.get("content-type") || "").includes("application/json");
-      if (ehJson) {
-        const dados = await res.json();
-        if (res.ok) {
-          setPicker({ codigo, descricao, status: "pronto", videos: dados.videos || [] });
-          return;
-        }
-      }
-    } catch {
-      // segue para a lista importada abaixo
+  // Abre o vídeo direto quando só tem um; com mais de um, mostra a lista pra escolher.
+  // Os vídeos vêm do cadastro da operação (link colado à mão, importado do OneDrive ou
+  // achado ao vivo pelo "Verificar vídeos" — tanto faz a origem, todos caem no mesmo campo).
+  const handlePlay = (codigo, descricao, videos) => {
+    const lista = videos || [];
+    if (lista.length === 1) {
+      window.open(lista[0].url, "_blank", "noopener,noreferrer");
+      return;
     }
-
-    setPicker({ codigo, descricao, status: "pronto", videos: videosImportados || [] });
+    setPicker({ codigo, descricao, videos: lista });
   };
 
   useEffect(() => {
@@ -189,7 +186,7 @@ export default function RoteiroTab({ ficha, update }) {
                   onDown={() => move(i, 1)}
                   onRemove={() => removeRow(i)}
                   onPlay={() =>
-                    buscarVideos(row.codigo, porCodigo[row.codigo]?.descricao, porCodigo[row.codigo]?.videos)
+                    handlePlay(row.codigo, porCodigo[row.codigo]?.descricao, porCodigo[row.codigo]?.videos)
                   }
                 />
               )
@@ -236,17 +233,16 @@ export default function RoteiroTab({ ficha, update }) {
 
       <p className="hint">
         Máquina, descrição e método vêm do Banco de Operações pelo código — só a observação é específica desta
-        ficha. O tempo mostrado já considera o grupo de tecido escolhido na Capa ({grupoTecido}). O botão ▶ mostra os
-        vídeos já importados do OneDrive para aquele código (veja "Importar vídeos" no Banco de Operações).
+        ficha. O tempo mostrado já considera o grupo de tecido escolhido na Capa ({grupoTecido}). O botão ▶ abre
+        direto o vídeo cadastrado para aquele código, ou mostra a lista se houver mais de um (cadastre os links
+        editando a operação no Banco de Operações).
       </p>
 
       {picker && (
         <VideoPickerModal
           codigo={picker.codigo}
           descricao={picker.descricao}
-          status={picker.status}
           videos={picker.videos}
-          mensagem={picker.mensagem}
           onClose={() => setPicker(null)}
         />
       )}

@@ -166,6 +166,15 @@ function EditarOperacaoModal({ operacao, onSalvar, onFechar }) {
 
   const setCampo = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
+  const videos = form.videos || [];
+  const setVideoUrl = (i, url) => {
+    const novos = [...videos];
+    novos[i] = { ...novos[i], url };
+    setForm({ ...form, videos: novos });
+  };
+  const addVideo = () => setForm({ ...form, videos: [...videos, { url: "" }] });
+  const removeVideo = (i) => setForm({ ...form, videos: videos.filter((_, idx) => idx !== i) });
+
   const handleSalvar = async (e) => {
     e.preventDefault();
     setErro("");
@@ -240,6 +249,34 @@ function EditarOperacaoModal({ operacao, onSalvar, onFechar }) {
               </select>
             </label>
           </div>
+
+          <span className="field-label">Vídeos</span>
+          <div className="video-links-edit">
+            {videos.length === 0 && (
+              <p className="hint">Nenhum vídeo cadastrado ainda — clique em "Adicionar vídeo" e cole o link.</p>
+            )}
+            {videos.map((v, i) => (
+              <div className="video-link-row" key={i}>
+                <input
+                  value={v.url}
+                  onChange={(e) => setVideoUrl(i, e.target.value)}
+                  placeholder="https://... (link do vídeo)"
+                />
+                <button
+                  type="button"
+                  className="icon-button tiny"
+                  onClick={() => removeVideo(i)}
+                  title="Remover vídeo"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <button type="button" className="button button-outline" onClick={addVideo}>
+              + Adicionar vídeo
+            </button>
+          </div>
+
           {erro && <p className="login-erro">{erro}</p>}
         </div>
         <div className="modal-foot">
@@ -289,9 +326,14 @@ export default function OperacoesPage() {
     const duplicado = operacoesRef.current.find((op) => op.codigo === codigo && op.id !== form.id);
     if (duplicado) throw new Error(`Já existe uma operação com o código ${codigo}.`);
 
+    // linhas com o link em branco (ex.: clicou em "Adicionar vídeo" e não colou nada) não vão salvas;
+    // quando existe pelo menos um vídeo de verdade, o status vídeo já vira "Concluído" sozinho
+    const videos = (form.videos || []).map((v) => ({ ...v, url: v.url.trim() })).filter((v) => v.url);
+    const statusVideo = videos.length > 0 ? "Concluído" : form.statusVideo || "Pendente";
+
     const ehNova = !form.id;
     const paraSalvar = ehNova ? { ...form, criadoEm: new Date().toISOString() } : form;
-    const { record, persistedTo } = await operacoesStore.save({ ...paraSalvar, codigo });
+    const { record, persistedTo } = await operacoesStore.save({ ...paraSalvar, codigo, videos, statusVideo });
 
     setOperacoes((lista) => (ehNova ? [...lista, record] : lista.map((op) => (op.id === record.id ? record : op))));
     setSelecionadoId(record.id);
