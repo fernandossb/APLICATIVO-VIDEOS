@@ -1971,11 +1971,25 @@ tr.code-missing .from-catalog {
   padding: 16px 18px;
 }
 
-.video-player-wrap video {
+.video-embed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.video-embed-media {
   width: 100%;
+  aspect-ratio: 16 / 9;
   max-height: 60vh;
+  border: none;
   border-radius: var(--radius);
   background: #000;
+}
+
+.video-fallback-link {
+  align-self: center;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 @media (max-width: 860px) {
