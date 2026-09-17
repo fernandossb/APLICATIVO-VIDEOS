@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import FichasPage from "./pages/FichasPage";
 import OperacoesPage from "./pages/OperacoesPage";
 import QualidadeDashboardPage from "./pages/QualidadeDashboardPage";
 import InspecoesPage from "./pages/InspecoesPage";
+import LoginScreen from "./components/LoginScreen";
+import CapacidadeIndicador from "./components/CapacidadeIndicador";
+import { getSession, onAuthStateChange, signOut } from "./lib/auth";
+import { supabaseConfigured } from "./lib/supabase";
 import { NAV } from "./data/constants";
 
 const PAGES = {
@@ -14,6 +18,22 @@ const PAGES = {
 
 export default function App() {
   const [view, setView] = useState("ficha-tecnica");
+  const [sessao, setSessao] = useState(supabaseConfigured ? undefined : null);
+
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+    getSession().then(setSessao);
+    const subscription = onAuthStateChange(setSessao);
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (sessao === undefined) {
+    return <div className="app-loading">Carregando...</div>;
+  }
+
+  if (!sessao && supabaseConfigured) {
+    return <LoginScreen />;
+  }
 
   return (
     <div className="app-shell">
@@ -41,6 +61,18 @@ export default function App() {
             ))}
           </div>
         ))}
+
+        <div className="nav-footer">
+          <CapacidadeIndicador />
+          {sessao && (
+            <div className="nav-user">
+              <span title={sessao.user.email}>{sessao.user.email}</span>
+              <button type="button" onClick={signOut}>
+                Sair
+              </button>
+            </div>
+          )}
+        </div>
       </nav>
 
       <div className="app-body">

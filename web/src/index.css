@@ -154,6 +154,163 @@ textarea {
   min-height: 0;
 }
 
+.app-loading {
+  display: grid;
+  height: 100vh;
+  place-items: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* login */
+.login-screen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  background: var(--bg);
+  padding: 24px;
+}
+
+.login-card {
+  display: flex;
+  width: min(360px, 100%);
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 32px 28px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.login-brand-mark {
+  margin: 0 auto 4px;
+  background: var(--teal-dark);
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.login-erro {
+  margin: -4px 0 0;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+/* rodape do menu: capacidade e usuario logado */
+.nav-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 18px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.nav-user span {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.75);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-user button {
+  flex: none;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.nav-user button:hover {
+  color: #fff;
+}
+
+/* indicador de capacidade */
+.capacidade-indicador {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.capacidade-titulo {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.capacidade-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.capacidade-item-head {
+  display: flex;
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+}
+
+.capacidade-barra {
+  overflow: hidden;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.capacidade-barra-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.capacidade-barra-fill.capacidade-success {
+  background: #4ade80;
+}
+
+.capacidade-barra-fill.capacidade-warning {
+  background: var(--amber);
+}
+
+.capacidade-barra-fill.capacidade-danger {
+  background: #f87171;
+}
+
+.capacidade-carregando,
+.capacidade-erro {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+}
+
 .page {
   display: contents;
 }
