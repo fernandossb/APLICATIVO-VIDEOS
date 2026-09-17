@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import FichaForm from "../components/FichaForm/FichaForm";
 import { fichasStore } from "../lib/storage";
 import { supabase, supabaseConfigured } from "../lib/supabase";
+import { embutirImagens, rehospedarImagens } from "../lib/imagensFicha";
 import { emptyFicha } from "../data/constants";
 import SearchBox from "../components/SearchBox";
 
@@ -79,16 +80,30 @@ export default function FichasPage() {
     }
   };
 
-  const handleExportar = (f) => {
-    baixarJson(`ficha-${f.referencia || f.id}.json`, f);
+  const handleExportar = async (f) => {
+    setStatus("Preparando exportação...");
+    try {
+      const comImagens = await embutirImagens(f);
+      baixarJson(`ficha-${f.referencia || f.id}.json`, comImagens);
+      setStatus("");
+    } catch (err) {
+      setStatus(`Erro ao exportar: ${err.message}`);
+    }
   };
 
-  const handleExportarTodas = () => {
+  const handleExportarTodas = async () => {
     if (fichas.length === 0) {
       setStatus("Nenhuma ficha para exportar.");
       return;
     }
-    baixarJson(`fichas-tecnicas-backup-${new Date().toISOString().slice(0, 10)}.json`, fichas);
+    setStatus("Preparando exportação...");
+    try {
+      const todasComImagens = await Promise.all(fichas.map(embutirImagens));
+      baixarJson(`fichas-tecnicas-backup-${new Date().toISOString().slice(0, 10)}.json`, todasComImagens);
+      setStatus("");
+    } catch (err) {
+      setStatus(`Erro ao exportar: ${err.message}`);
+    }
   };
 
   const handleImportar = async (e) => {
@@ -104,7 +119,8 @@ export default function FichasPage() {
       let importadas = 0;
       for (const item of lista) {
         const { id, ...resto } = item;
-        await fichasStore.save(resto);
+        const comImagensRehospedadas = await rehospedarImagens(resto);
+        await fichasStore.save(comImagensRehospedadas);
         importadas++;
       }
       await refresh();
