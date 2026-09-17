@@ -1,8 +1,7 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { operacoesStore, fichasStore } from "../lib/storage";
 import { supabaseConfigured } from "../lib/supabase";
 import { metodosTempo, statusOperacaoOpcoes, tempoPorGrupoTecido } from "../data/constants";
-import SearchBox from "../components/SearchBox";
 import ColumnFilterButton from "../components/ColumnFilterButton";
 
 const videosFolderUrl = import.meta.env.VITE_VIDEOS_FOLDER_URL;
@@ -42,11 +41,18 @@ function baixarJson(nomeArquivo, dado) {
   URL.revokeObjectURL(url);
 }
 
-// Um valor por coluna, usado tanto para montar as opções do filtro quanto para aplicá-lo.
+// Até 3 palavras-chave, em qualquer ordem, todas precisam aparecer na descrição.
+function combinaPalavrasChave(texto, termoBusca) {
+  const palavras = termoBusca.trim().toLowerCase().split(/\s+/).filter(Boolean).slice(0, 3);
+  if (palavras.length === 0) return true;
+  const alvo = String(texto || "").toLowerCase();
+  return palavras.every((p) => alvo.includes(p));
+}
+
+// Um valor por coluna, usado para montar as opções do filtro e para aplicá-lo.
 const colunaValor = {
   codigo: (op) => op.codigo,
   grupoMaquina: (op) => op.grupoMaquina,
-  descricao: (op) => op.descricao,
   tempoG1: (op) => op.tempoG1,
   tempoG2: (op) => tempoPorGrupoTecido(op.tempoG1, "G2").toFixed(4),
   tempoG3: (op) => tempoPorGrupoTecido(op.tempoG1, "G3").toFixed(4),
@@ -71,70 +77,71 @@ function ThFiltravel({ children, className, colKey, operacoes, columnFilters, on
   );
 }
 
-const OperacaoRow = memo(function OperacaoRow({ op, selecionado, onSelect, onChange, onCommit }) {
-  const setTextField = (key) => (e) => onChange({ ...op, [key]: e.target.value });
-  const setSelectField = (key) => (e) => {
-    const atualizado = { ...op, [key]: e.target.value };
-    onChange(atualizado);
-    onCommit(atualizado);
-  };
-  const commitAtual = () => onCommit(op);
+function DescricaoFiltro({ valor, onChange }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!aberto) return;
+    const onDocClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setAberto(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [aberto]);
+
+  return (
+    <span className="col-filter" ref={ref}>
+      <button
+        type="button"
+        className={`col-filter-trigger${valor ? " active" : ""}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          setAberto((a) => !a);
+        }}
+        title="Buscar na descrição"
+      >
+        ▾
+      </button>
+      {aberto && (
+        <div className="col-filter-dropdown" onClick={(e) => e.stopPropagation()}>
+          <input
+            value={valor}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="até 3 palavras-chave..."
+            autoFocus
+          />
+        </div>
+      )}
+    </span>
+  );
+}
+
+const OperacaoRow = memo(function OperacaoRow({ op, selecionado, onSelect }) {
   const statusVideo = op.statusVideo || "Pendente";
   const statusGSD = op.statusGSD || "Pendente";
 
   return (
-    <tr
-      className={`${op.codigo.trim() ? "" : "draft-row"}${selecionado ? " row-selected" : ""}`}
-      onClick={() => onSelect(op.id)}
-    >
+    <tr className={selecionado ? "row-selected" : ""} onClick={() => onSelect(op.id)}>
       <td className="col-select">
         <input
           type="radio"
           checked={selecionado}
           onChange={() => onSelect(op.id)}
-          aria-label={`Selecionar operação ${op.codigo || "nova"}`}
+          aria-label={`Selecionar operação ${op.codigo}`}
         />
       </td>
-      <td className="col-code">
-        <input value={op.codigo} onChange={setTextField("codigo")} onBlur={commitAtual} placeholder="10004" />
-      </td>
-      <td className="col-group">
-        <input value={op.grupoMaquina} onChange={setTextField("grupoMaquina")} onBlur={commitAtual} placeholder="OVR4F" />
-      </td>
-      <td className="col-desc">
-        <input
-          value={op.descricao}
-          onChange={setTextField("descricao")}
-          onBlur={commitAtual}
-          placeholder="Descrição da operação"
-        />
-      </td>
-      <td className="col-time">
-        <input value={op.tempoG1} onChange={setTextField("tempoG1")} onBlur={commitAtual} placeholder="0.000" />
-      </td>
+      <td className="col-code">{op.codigo}</td>
+      <td className="col-group">{op.grupoMaquina}</td>
+      <td className="col-desc">{op.descricao}</td>
+      <td className="col-time">{op.tempoG1}</td>
       <td className="col-time computed">{tempoPorGrupoTecido(op.tempoG1, "G2").toFixed(4)}</td>
       <td className="col-time computed">{tempoPorGrupoTecido(op.tempoG1, "G3").toFixed(4)}</td>
-      <td className="col-method">
-        <select value={op.metodo} onChange={setSelectField("metodo")}>
-          {metodosTempo.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-      </td>
+      <td className="col-method">{op.metodo}</td>
       <td className="col-status">
-        <select
-          value={statusVideo}
-          onChange={setSelectField("statusVideo")}
-          className={`status-select ${statusVideo === "Concluído" ? "status-success" : "status-warning"}`}
-        >
-          {statusOperacaoOpcoes.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+        <span className={`status-pill-inline ${statusVideo === "Concluído" ? "status-success" : "status-warning"}`}>
+          {statusVideo}
+        </span>
         {op.videos?.length > 0 && (
           <span className="status-count" title={`${op.videos.length} vídeo(s) importado(s)`}>
             {op.videos.length}
@@ -142,30 +149,119 @@ const OperacaoRow = memo(function OperacaoRow({ op, selecionado, onSelect, onCha
         )}
       </td>
       <td className="col-status">
-        <select
-          value={statusGSD}
-          onChange={setSelectField("statusGSD")}
-          className={`status-select ${statusGSD === "Concluído" ? "status-success" : "status-warning"}`}
-        >
-          {statusOperacaoOpcoes.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+        <span className={`status-pill-inline ${statusGSD === "Concluído" ? "status-success" : "status-warning"}`}>
+          {statusGSD}
+        </span>
       </td>
       <td className="col-date muted">{formatDataHora(op.atualizadoEm)}</td>
     </tr>
   );
 });
 
+function EditarOperacaoModal({ operacao, onSalvar, onFechar }) {
+  const [form, setForm] = useState(operacao);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState("");
+  const ehNova = !operacao.id;
+
+  const setCampo = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+
+  const handleSalvar = async (e) => {
+    e.preventDefault();
+    setErro("");
+    setSalvando(true);
+    try {
+      await onSalvar(form);
+    } catch (err) {
+      setErro(err.message);
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="modal">
+      <div className="modal-backdrop" onClick={onFechar} />
+      <form className="modal-card modal-card-wide" onSubmit={handleSalvar}>
+        <div className="modal-head">
+          <div>
+            <p className="overline">{ehNova ? "Banco de operações" : form.codigo}</p>
+            <h2>{ehNova ? "Nova operação" : "Alterar operação"}</h2>
+          </div>
+          <button type="button" className="icon-button" onClick={onFechar} title="Fechar">
+            ×
+          </button>
+        </div>
+        <div className="modal-body">
+          <div className="field-grid-edit">
+            <label>
+              Código
+              <input value={form.codigo} onChange={setCampo("codigo")} placeholder="10004" required autoFocus />
+            </label>
+            <label>
+              Máquina
+              <input value={form.grupoMaquina} onChange={setCampo("grupoMaquina")} placeholder="OVR4F" />
+            </label>
+            <label className="full-width">
+              Descrição
+              <input value={form.descricao} onChange={setCampo("descricao")} placeholder="Descrição da operação" />
+            </label>
+            <label>
+              Tempo G1
+              <input value={form.tempoG1} onChange={setCampo("tempoG1")} placeholder="0.000" />
+            </label>
+            <label>
+              Método
+              <select value={form.metodo} onChange={setCampo("metodo")}>
+                {metodosTempo.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Status vídeo
+              <select value={form.statusVideo || "Pendente"} onChange={setCampo("statusVideo")}>
+                {statusOperacaoOpcoes.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Status GSD
+              <select value={form.statusGSD || "Pendente"} onChange={setCampo("statusGSD")}>
+                {statusOperacaoOpcoes.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {erro && <p className="login-erro">{erro}</p>}
+        </div>
+        <div className="modal-foot">
+          <button type="button" className="button button-outline" onClick={onFechar}>
+            Cancelar
+          </button>
+          <button type="submit" className="button button-primary" disabled={salvando}>
+            {salvando ? "Salvando..." : "Salvar"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function OperacoesPage() {
   const [operacoes, setOperacoes] = useState([]);
-  const [rascunhoIds, setRascunhoIds] = useState(() => new Set());
   const [status, setStatus] = useState("");
-  const [busca, setBusca] = useState("");
   const [columnFilters, setColumnFilters] = useState({});
+  const [filtroDescricao, setFiltroDescricao] = useState("");
   const [selecionadoId, setSelecionadoId] = useState(null);
+  const [modalEdicao, setModalEdicao] = useState(null);
   const [confirmacao, setConfirmacao] = useState(null);
   const operacoesRef = useRef([]);
 
@@ -180,44 +276,29 @@ export default function OperacoesPage() {
       .catch((err) => setStatus(`Erro ao listar operações: ${err.message}`));
   }, []);
 
-  const alterarLinha = useCallback((atualizado) => {
-    setOperacoes((lista) => lista.map((op) => (op.id === atualizado.id ? atualizado : op)));
-  }, []);
+  const abrirNova = () => setModalEdicao(emptyOperacao());
+  const abrirAlterar = () => {
+    const op = operacoes.find((o) => o.id === selecionadoId);
+    if (op) setModalEdicao(op);
+  };
 
-  const salvarLinha = useCallback(async (registroAtual) => {
-    const codigo = registroAtual.codigo.trim();
-    if (!codigo) return;
+  const handleSalvarModal = async (form) => {
+    const codigo = form.codigo.trim();
+    if (!codigo) throw new Error("Informe o código.");
 
-    const duplicado = operacoesRef.current.find((op) => op.codigo === codigo && op.id !== registroAtual.id);
-    if (duplicado) {
-      setStatus(`Já existe uma operação com o código ${codigo}.`);
-      return;
-    }
+    const duplicado = operacoesRef.current.find((op) => op.codigo === codigo && op.id !== form.id);
+    if (duplicado) throw new Error(`Já existe uma operação com o código ${codigo}.`);
 
-    setStatus("Salvando...");
-    try {
-      const { record, persistedTo } = await operacoesStore.save({ ...registroAtual, codigo });
-      setOperacoes((lista) => lista.map((op) => (op.id === record.id ? record : op)));
-      setRascunhoIds((set) => {
-        if (!set.has(record.id)) return set;
-        const copia = new Set(set);
-        copia.delete(record.id);
-        return copia;
-      });
-      setStatus(
-        persistedTo === "supabase" ? "Salvo." : "Salvo neste navegador — configure o Supabase (README) para salvar de vez."
-      );
-    } catch (err) {
-      setStatus(`Erro ao salvar: ${err.message}`);
-    }
-  }, []);
+    const ehNova = !form.id;
+    const paraSalvar = ehNova ? { ...form, criadoEm: new Date().toISOString() } : form;
+    const { record, persistedTo } = await operacoesStore.save({ ...paraSalvar, codigo });
 
-  const handleNovaLinha = () => {
-    const nova = { ...emptyOperacao(), id: crypto.randomUUID(), criadoEm: new Date().toISOString() };
-    setOperacoes((lista) => [...lista, nova]);
-    setRascunhoIds((set) => new Set(set).add(nova.id));
-    setSelecionadoId(nova.id);
-    setStatus("");
+    setOperacoes((lista) => (ehNova ? [...lista, record] : lista.map((op) => (op.id === record.id ? record : op))));
+    setSelecionadoId(record.id);
+    setModalEdicao(null);
+    setStatus(
+      persistedTo === "supabase" ? "Salvo." : "Salvo neste navegador — configure o Supabase (README) para salvar de vez."
+    );
   };
 
   const handleExportarTodas = () => {
@@ -288,13 +369,45 @@ export default function OperacoesPage() {
       }
 
       const aviso = naoEncontrados.length
-        ? ` ${naoEncontrados.length} código(s) do arquivo não existem no Banco de Operações ainda: ${naoEncontrados
-            .slice(0, 5)
-            .join(", ")}${naoEncontrados.length > 5 ? "..." : ""}.`
+        ? ` ${naoEncontrados.length} código(s) do arquivo não existem no Banco de Operações ainda.`
         : "";
       setStatus(`${atualizadas} operação(ões) atualizada(s) com vídeo.${aviso}`);
     } catch (err) {
       setStatus(`Erro ao importar: ${err.message}`);
+    }
+  };
+
+  // Usa a mesma busca ao vivo no OneDrive que o botão ▶ do roteiro já usa —
+  // só entra em ação de verdade quando as variáveis GRAPH_* estiverem
+  // configuradas (README); sem isso, avisa uma vez e para.
+  const handleVerificarVideos = async () => {
+    setStatus("Verificando vídeos no OneDrive...");
+    try {
+      let atualizadas = 0;
+      for (const op of operacoesRef.current) {
+        const codigo = op.codigo.trim();
+        if (!codigo || op.statusVideo === "Concluído") continue;
+
+        const res = await fetch(`/api/videos-por-codigo?codigo=${encodeURIComponent(codigo)}`);
+        const dados = await res.json();
+
+        if (!res.ok) {
+          if (res.status === 501) {
+            setStatus(dados.error);
+            return;
+          }
+          continue;
+        }
+
+        if (dados.videos?.length) {
+          const { record } = await operacoesStore.save({ ...op, videos: dados.videos, statusVideo: "Concluído" });
+          setOperacoes((lista) => lista.map((o) => (o.id === record.id ? record : o)));
+          atualizadas++;
+        }
+      }
+      setStatus(`${atualizadas} operação(ões) com vídeo encontrado no OneDrive.`);
+    } catch (err) {
+      setStatus(`Erro ao verificar vídeos: ${err.message}`);
     }
   };
 
@@ -304,11 +417,6 @@ export default function OperacoesPage() {
     const op = operacoes.find((o) => o.id === selecionadoId);
     if (!op) return;
     const codigo = op.codigo.trim();
-
-    if (!codigo) {
-      setConfirmacao({ op, usadoEm: [] });
-      return;
-    }
 
     setStatus("Verificando uso em fichas técnicas...");
     try {
@@ -328,12 +436,6 @@ export default function OperacoesPage() {
     setConfirmacao(null);
     setSelecionadoId((atual) => (atual === op.id ? null : atual));
     setOperacoes((lista) => lista.filter((o) => o.id !== op.id));
-    setRascunhoIds((set) => {
-      if (!set.has(op.id)) return set;
-      const copia = new Set(set);
-      copia.delete(op.id);
-      return copia;
-    });
     try {
       await operacoesStore.remove(op.id);
       setStatus("Operação excluída.");
@@ -341,6 +443,12 @@ export default function OperacoesPage() {
       setStatus(`Erro ao excluir: ${err.message}`);
     }
   };
+
+  // Clicar numa linha já selecionada desmarca ela — sem isso, depois de
+  // selecionar a primeira vez não haveria como voltar ao botão "Nova operação".
+  const handleSelecionar = useCallback((id) => {
+    setSelecionadoId((atual) => (atual === id ? null : id));
+  }, []);
 
   const handleFilterChange = useCallback((colKey, valor) => {
     setColumnFilters((atual) => {
@@ -354,30 +462,16 @@ export default function OperacoesPage() {
   // Tabela: linha nova entra só no final, e fica nessa posição pra sempre —
   // edições não reordenam nada. Por isso ordena pela data de criação, não
   // pelo código nem pela última alteração.
-  const linhasOrdenadas = useMemo(() => {
-    return [...operacoes].sort((a, b) => (a.criadoEm || "").localeCompare(b.criadoEm || ""));
-  }, [operacoes]);
+  const linhasOrdenadas = [...operacoes].sort((a, b) => (a.criadoEm || "").localeCompare(b.criadoEm || ""));
 
-  const linhasFiltradas = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
-    return linhasOrdenadas.filter((op) => {
-      if (rascunhoIds.has(op.id)) return true;
-
-      if (termo) {
-        const combina = [op.codigo, op.descricao, op.grupoMaquina].some((campo) =>
-          String(campo || "").toLowerCase().includes(termo)
-        );
-        if (!combina) return false;
-      }
-
-      for (const [colKey, permitidos] of Object.entries(columnFilters)) {
-        const valor = String(colunaValor[colKey](op) ?? "").trim();
-        if (!permitidos.has(valor)) return false;
-      }
-
-      return true;
-    });
-  }, [linhasOrdenadas, busca, rascunhoIds, columnFilters]);
+  const linhasFiltradas = linhasOrdenadas.filter((op) => {
+    if (!combinaPalavrasChave(op.descricao, filtroDescricao)) return false;
+    for (const [colKey, permitidos] of Object.entries(columnFilters)) {
+      const valor = String(colunaValor[colKey](op) ?? "").trim();
+      if (!permitidos.has(valor)) return false;
+    }
+    return true;
+  });
 
   const thProps = { operacoes, columnFilters, onFilterChange: handleFilterChange };
 
@@ -389,59 +483,81 @@ export default function OperacoesPage() {
           <h1>Banco de operações</h1>
         </div>
         <div className="topbar-actions">
+          <button
+            type="button"
+            className="button button-primary button-icon icon-btn-tooltip"
+            data-tooltip={selecionadoId ? "Alterar operação selecionada" : "Nova operação"}
+            onClick={selecionadoId ? abrirAlterar : abrirNova}
+          >
+            {selecionadoId ? "✎" : "➕"}
+          </button>
+          <button
+            type="button"
+            className="button button-danger-outline button-icon icon-btn-tooltip"
+            disabled={!selecionadoId}
+            onClick={handleExcluirClick}
+            data-tooltip="Excluir operação selecionada"
+          >
+            🗑
+          </button>
+          <button
+            type="button"
+            className="button button-outline button-icon icon-btn-tooltip"
+            disabled={!selecionadoId}
+            onClick={handleExportarSelecionada}
+            data-tooltip="Exportar operação selecionada"
+          >
+            ⬇
+          </button>
+          <button
+            type="button"
+            className="button button-outline button-icon icon-btn-tooltip"
+            onClick={handleExportarTodas}
+            data-tooltip="Exportar todas as operações"
+          >
+            ⬇⬇
+          </button>
+          <label className="button button-outline button-icon icon-btn-tooltip" data-tooltip="Importar operações (JSON)">
+            ⬆
+            <input type="file" accept="application/json" onChange={handleImportar} hidden />
+          </label>
+          <label
+            className="button button-outline button-icon icon-btn-tooltip"
+            data-tooltip="Importar vídeos sincronizados (JSON)"
+          >
+            🎬
+            <input type="file" accept="application/json" onChange={handleImportarVideos} hidden />
+          </label>
+          <button
+            type="button"
+            className="button button-outline button-icon icon-btn-tooltip"
+            onClick={handleVerificarVideos}
+            data-tooltip="Verificar vídeos no OneDrive"
+          >
+            🔄
+          </button>
+          {videosFolderUrl && (
+            <a
+              href={videosFolderUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="button button-outline button-icon icon-btn-tooltip"
+              data-tooltip="Abrir pasta de vídeos"
+            >
+              📁
+            </a>
+          )}
           {status && <span className="status-pill">{status}</span>}
           <span className="count-pill">{operacoes.length}</span>
         </div>
       </header>
 
       <section className="content-panel content-panel-wide">
-        <div className="flow-toolbar">
-          <div className="toolbar-actions">
-            <button type="button" className="button button-primary" onClick={handleNovaLinha}>
-              + Nova operação
-            </button>
-            <button
-              type="button"
-              className="button button-danger-outline"
-              disabled={!selecionadoId}
-              onClick={handleExcluirClick}
-              title={selecionadoId ? "Excluir a operação selecionada" : "Selecione uma linha para excluir"}
-            >
-              Excluir selecionada
-            </button>
-            <button
-              type="button"
-              className="button button-outline"
-              disabled={!selecionadoId}
-              onClick={handleExportarSelecionada}
-            >
-              Exportar selecionada
-            </button>
-            <button type="button" className="button button-outline" onClick={handleExportarTodas}>
-              Exportar todas
-            </button>
-            <label className="button button-outline" style={{ cursor: "pointer" }}>
-              Importar (JSON)
-              <input type="file" accept="application/json" onChange={handleImportar} hidden />
-            </label>
-            <label className="button button-outline" style={{ cursor: "pointer" }}>
-              + Importar vídeos (JSON)
-              <input type="file" accept="application/json" onChange={handleImportarVideos} hidden />
-            </label>
-            {videosFolderUrl && (
-              <a href={videosFolderUrl} target="_blank" rel="noreferrer" className="button button-outline">
-                abrir pasta de vídeos ↗
-              </a>
-            )}
-          </div>
-          <SearchBox value={busca} onChange={setBusca} placeholder="Buscar código, descrição ou máquina..." />
-        </div>
-
         {!supabaseConfigured && (
           <p className="hint">Modo local: as operações ficam salvas neste navegador até o Supabase ser configurado.</p>
         )}
 
-        <div className="table-wrap banco-table-wrap">
+        <div className="table-wrap banco-table-wrap tabela-compacta">
           <table>
             <thead>
               <tr>
@@ -452,9 +568,12 @@ export default function OperacoesPage() {
                 <ThFiltravel colKey="grupoMaquina" className="col-group" {...thProps}>
                   Máquina
                 </ThFiltravel>
-                <ThFiltravel colKey="descricao" className="col-desc" {...thProps}>
-                  Descrição da operação
-                </ThFiltravel>
+                <th className="col-desc">
+                  <div className="th-cell">
+                    <span>Descrição da operação</span>
+                    <DescricaoFiltro valor={filtroDescricao} onChange={setFiltroDescricao} />
+                  </div>
+                </th>
                 <ThFiltravel colKey="tempoG1" className="col-time" {...thProps}>
                   Tempo G1
                 </ThFiltravel>
@@ -489,30 +608,23 @@ export default function OperacoesPage() {
                 </tr>
               )}
               {linhasFiltradas.map((op) => (
-                <OperacaoRow
-                  key={op.id}
-                  op={op}
-                  selecionado={op.id === selecionadoId}
-                  onSelect={setSelecionadoId}
-                  onChange={alterarLinha}
-                  onCommit={salvarLinha}
-                />
+                <OperacaoRow key={op.id} op={op} selecionado={op.id === selecionadoId} onSelect={handleSelecionar} />
               ))}
             </tbody>
           </table>
         </div>
 
         <p className="hint">
-          Clique numa linha para selecioná-la e use "Excluir selecionada" no topo — a exclusão só é permitida se a
-          operação não estiver em uso no roteiro de nenhuma ficha técnica. Clique no ▾ do título de qualquer coluna
-          para filtrar pelos valores dela, como numa planilha do Excel. Ninguém cadastra link vídeo por vídeo. Rode{" "}
-          <code>scripts/sincronizar-videos-onedrive.ps1</code> (uma vez, e de novo quando subir vídeo novo) — ele
-          gera o link certo de cada vídeo automaticamente e salva um arquivo. Clique em{" "}
-          <strong>"+ Importar vídeos (JSON)"</strong> acima e escolha esse arquivo para ligar os vídeos aos códigos de
-          uma vez só — a coluna Vídeo muda para "Concluído" sozinha nos códigos importados. Código, máquina,
-          descrição, tempo e método usados nas fichas técnicas vêm direto desta tabela.
+          Clique numa linha para selecioná-la (clique de novo para desmarcar) — o botão de lápis no topo abre a tela pra alterar os campos dela. A
+          exclusão só é permitida se a operação não estiver em uso no roteiro de nenhuma ficha técnica. Clique no ▾ do
+          título de qualquer coluna para filtrar; na Descrição, digite até 3 palavras-chave. Passe o mouse sobre os
+          botões do topo por um instante para ver o que cada um faz.
         </p>
       </section>
+
+      {modalEdicao && (
+        <EditarOperacaoModal operacao={modalEdicao} onSalvar={handleSalvarModal} onFechar={() => setModalEdicao(null)} />
+      )}
 
       {confirmacao && (
         <div className="modal">
@@ -520,7 +632,7 @@ export default function OperacoesPage() {
           <div className="modal-card">
             <div className="modal-head">
               <div>
-                <p className="overline">{confirmacao.op.codigo || "Rascunho"}</p>
+                <p className="overline">{confirmacao.op.codigo}</p>
                 <h2>{confirmacao.usadoEm.length > 0 ? "Não é possível excluir" : "Excluir operação?"}</h2>
               </div>
               <button type="button" className="icon-button" onClick={() => setConfirmacao(null)} title="Fechar">
@@ -531,7 +643,8 @@ export default function OperacoesPage() {
               {confirmacao.usadoEm.length > 0 ? (
                 <>
                   <p>
-                    Esta operação está no roteiro d{confirmacao.usadoEm.length === 1 ? "esta ficha técnica" : "estas fichas técnicas"}:
+                    Esta operação está no roteiro d
+                    {confirmacao.usadoEm.length === 1 ? "esta ficha técnica" : "estas fichas técnicas"}:
                   </p>
                   <ul className="modal-list">
                     {confirmacao.usadoEm.map((f) => (
@@ -545,7 +658,7 @@ export default function OperacoesPage() {
                 </>
               ) : (
                 <p>
-                  Tem certeza que deseja excluir a operação <strong>{confirmacao.op.codigo || "sem código"}</strong>
+                  Tem certeza que deseja excluir a operação <strong>{confirmacao.op.codigo}</strong>
                   {confirmacao.op.descricao ? ` — ${confirmacao.op.descricao}` : ""}? Essa ação não pode ser desfeita.
                 </p>
               )}

@@ -49,7 +49,7 @@ export default function InsumosTab({ ficha, update }) {
               <thead>
                 <tr>
                   <th>Descrição</th>
-                  <th>Referência</th>
+                  <th>Cód. Material</th>
                   <th>Aplicação</th>
                   <th>Consumo</th>
                   {variantes.map((v) => (

@@ -11,8 +11,8 @@ const TABS = [
   { key: "variantes", label: "Variantes", Component: VariantesTab },
   { key: "modelagem", label: "Modelagem", Component: ModelagemTab },
   { key: "insumos", label: "Insumos", Component: InsumosTab },
-  { key: "comentarios", label: "Comentários", Component: ComentariosTab },
   { key: "roteiro", label: "Roteiro", Component: RoteiroTab },
+  { key: "comentarios", label: "Comentários", Component: ComentariosTab },
 ];
 
 export default function FichaForm({ ficha, onChange, onSave, status }) {

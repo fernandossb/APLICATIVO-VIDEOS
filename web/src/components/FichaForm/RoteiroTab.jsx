@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { operacoesStore } from "../../lib/storage";
 import { tempoPorGrupoTecido } from "../../data/constants";
-import SearchBox from "../SearchBox";
 import VideoPickerModal from "./VideoPickerModal";
 
 function RowActions({ onUp, onDown, onRemove }) {
@@ -56,7 +55,6 @@ export default function RoteiroTab({ ficha, update }) {
   const roteiro = ficha.roteiro || [];
   const grupoTecido = ficha.grupoTecido || "G1";
   const [catalogo, setCatalogo] = useState([]);
-  const [busca, setBusca] = useState("");
   const [picker, setPicker] = useState(null);
 
   const buscarVideos = async (codigo, descricao, videosImportados) => {
@@ -93,6 +91,26 @@ export default function RoteiroTab({ ficha, update }) {
 
   const tempoDaOperacao = (codigo) => tempoPorGrupoTecido(porCodigo[codigo]?.tempoG1, grupoTecido);
 
+  // Resumo por setor: cada "estágio" no roteiro vira uma seção, somando o
+  // tempo das operações que vêm logo depois dele até o próximo estágio.
+  function resumoPorSetor() {
+    const setores = [];
+    let atual = null;
+    for (const row of roteiro) {
+      if (row.tipo === "estagio") {
+        atual = { nome: row.nome?.trim() || "(sem nome)", tempo: 0 };
+        setores.push(atual);
+      } else if (row.tipo === "operacao") {
+        if (!atual) {
+          atual = { nome: "Sem estágio", tempo: 0 };
+          setores.push(atual);
+        }
+        atual.tempo += tempoDaOperacao(row.codigo);
+      }
+    }
+    return setores;
+  }
+
   const setRows = (rows) => update({ roteiro: rows });
   const setRow = (i, patch) => setRows(roteiro.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   const removeRow = (i) => setRows(roteiro.filter((_, idx) => idx !== i));
@@ -112,25 +130,12 @@ export default function RoteiroTab({ ficha, update }) {
 
   const semCadastro = roteiro.filter((r) => r.tipo === "operacao" && r.codigo && !porCodigo[r.codigo]).length;
 
-  const termo = busca.trim().toLowerCase();
   const linhasComIndice = roteiro.map((row, i) => ({ row, i }));
-  const linhasExibidas = termo
-    ? linhasComIndice.filter(({ row }) => {
-        if (row.tipo !== "operacao") return false;
-        const info = porCodigo[row.codigo];
-        return [row.codigo, row.observacao, info?.descricao, info?.grupoMaquina].some((campo) =>
-          String(campo || "").toLowerCase().includes(termo)
-        );
-      })
-    : linhasComIndice;
+  const resumoSetores = resumoPorSetor();
 
   return (
     <div className="tab-panel">
       <div className="flow-toolbar">
-        <div>
-          <span>Tempo total do roteiro ({grupoTecido})</span>
-          <strong>{totalTempo.toFixed(3)} min</strong>
-        </div>
         <div className="toolbar-metrics">
           <span>
             <strong>{roteiro.filter((r) => r.tipo === "operacao").length}</strong> operações
@@ -141,7 +146,6 @@ export default function RoteiroTab({ ficha, update }) {
             </span>
           )}
         </div>
-        <SearchBox value={busca} onChange={setBusca} placeholder="Buscar no roteiro..." />
       </div>
 
       <div className="table-wrap route-table-wrap">
@@ -159,14 +163,7 @@ export default function RoteiroTab({ ficha, update }) {
             </tr>
           </thead>
           <tbody>
-            {termo && linhasExibidas.length === 0 && (
-              <tr>
-                <td colSpan={8}>
-                  <div className="empty-state">Nenhuma operação encontrada para "{busca}".</div>
-                </td>
-              </tr>
-            )}
-            {linhasExibidas.map(({ row, i }) =>
+            {linhasComIndice.map(({ row, i }) =>
               row.tipo === "estagio" ? (
                 <tr className="stage-row" key={i}>
                   <td colSpan={7}>
@@ -216,6 +213,27 @@ export default function RoteiroTab({ ficha, update }) {
           + Estágio
         </button>
       </div>
+
+      <div className="resumo-setores">
+        <h3 className="sub">Resumo por setor</h3>
+        {resumoSetores.length === 0 ? (
+          <p className="muted">Adicione estágios e operações no roteiro para ver o resumo aqui.</p>
+        ) : (
+          <div className="resumo-setores-lista">
+            {resumoSetores.map((s, i) => (
+              <div className="resumo-setor-item" key={i}>
+                <span>{s.nome}</span>
+                <strong>{s.tempo.toFixed(3)} min</strong>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="resumo-setor-total">
+          <span>Total do roteiro ({grupoTecido})</span>
+          <strong>{totalTempo.toFixed(3)} min</strong>
+        </div>
+      </div>
+
       <p className="hint">
         Máquina, descrição e método vêm do Banco de Operações pelo código — só a observação é específica desta
         ficha. O tempo mostrado já considera o grupo de tecido escolhido na Capa ({grupoTecido}). O botão ▶ mostra os

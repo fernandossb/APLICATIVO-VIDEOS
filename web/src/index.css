@@ -622,6 +622,46 @@ h3.sub {
   pointer-events: none;
 }
 
+/* botoes so-icone (banco de operacoes) com dica ao passar o mouse */
+.button-icon {
+  width: 40px;
+  padding: 0;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.icon-btn-tooltip {
+  position: relative;
+}
+
+.icon-btn-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 20;
+  width: max-content;
+  max-width: 220px;
+  transform: translateX(-50%);
+  border-radius: 6px;
+  background: var(--teal-dark);
+  color: #fff;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: none;
+  text-align: center;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.icon-btn-tooltip:hover::after {
+  opacity: 1;
+  transition-delay: 1.5s;
+}
+
 .full-width {
   width: 100%;
 }
@@ -973,41 +1013,17 @@ tr.stage-row input {
   margin: 0;
 }
 
-.toolbar-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-
 .banco-table-wrap table {
   min-width: 1200px;
-}
-
-.banco-table-wrap .col-code input {
-  min-width: 70px;
-}
-
-.banco-table-wrap .col-group input {
-  min-width: 80px;
 }
 
 .banco-table-wrap .col-desc {
   min-width: 260px;
 }
 
-.banco-table-wrap .col-desc input {
-  min-width: 240px;
-}
-
-.banco-table-wrap .col-time input,
 .banco-table-wrap td.col-time.computed {
   min-width: 64px;
   text-align: right;
-}
-
-.banco-table-wrap .col-method select {
-  min-width: 100px;
 }
 
 .banco-table-wrap .col-status {
@@ -1020,23 +1036,29 @@ tr.stage-row input {
   font-size: 12px;
 }
 
-.status-select {
-  display: inline-block;
-  width: auto;
-  border-radius: 999px;
+/* linhas mais compactas (banco de operacoes: linhas viraram somente leitura) */
+.tabela-compacta th {
   padding: 6px 10px;
+}
+
+.tabela-compacta td {
+  padding: 4px 10px;
+}
+
+.status-pill-inline {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 10px;
   font-size: 12px;
   font-weight: 700;
 }
 
-.status-select.status-warning {
-  border-color: #fde7ba;
+.status-pill-inline.status-warning {
   background: #fef3c7;
   color: #92600a;
 }
 
-.status-select.status-success {
-  border-color: #cdeed8;
+.status-pill-inline.status-success {
   background: #dcfce7;
   color: #15803d;
 }
@@ -1257,6 +1279,59 @@ tr.row-selected:hover {
   border-color: var(--amber);
   background: #fbf1de;
   color: #8a5a10;
+}
+
+/* resumo por setor (roteiro da ficha tecnica) */
+.resumo-setores {
+  margin-top: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 16px 18px;
+}
+
+.resumo-setores-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.resumo-setor-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+}
+
+.resumo-setor-item span {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.resumo-setor-item strong {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.resumo-setor-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 2px solid var(--teal-dark);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--teal-dark);
+}
+
+.resumo-setor-total strong {
+  font-variant-numeric: tabular-nums;
 }
 
 .from-catalog {
@@ -1719,6 +1794,11 @@ tr.code-missing .from-catalog {
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
+}
+
+.modal-card-wide {
+  width: min(760px, calc(100vw - 32px));
+  max-height: min(85vh, 680px);
 }
 
 .modal-head {
