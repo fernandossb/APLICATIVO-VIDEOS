@@ -1264,6 +1264,50 @@ tr.row-selected:hover {
   text-decoration: underline;
 }
 
+.pasta-videos-dropdown {
+  width: 260px;
+}
+
+.pasta-videos-dropdown .field-label {
+  margin-bottom: 6px;
+}
+
+.pasta-videos-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.pasta-videos-actions button {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--teal-dark);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pasta-videos-actions button:hover {
+  text-decoration: underline;
+}
+
+.pasta-videos-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pasta-videos-actions a {
+  color: var(--teal);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.pasta-videos-actions a:hover {
+  text-decoration: underline;
+}
+
 .col-filter-list {
   overflow-y: auto;
   margin: 0;

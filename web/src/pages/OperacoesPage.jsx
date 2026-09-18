@@ -1,10 +1,9 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { operacoesStore, fichasStore } from "../lib/storage";
 import { supabaseConfigured } from "../lib/supabase";
+import { obterLinkPastaVideos, salvarLinkPastaVideos } from "../lib/configuracoes";
 import { metodosTempo, statusOperacaoOpcoes, tempoPorGrupoTecido } from "../data/constants";
 import ColumnFilterButton from "../components/ColumnFilterButton";
-
-const videosFolderUrl = import.meta.env.VITE_VIDEOS_FOLDER_URL;
 
 const emptyOperacao = () => ({
   id: null,
@@ -111,6 +110,88 @@ function DescricaoFiltro({ valor, onChange }) {
             placeholder="até 3 palavras-chave..."
             autoFocus
           />
+        </div>
+      )}
+    </span>
+  );
+}
+
+// O link da pasta de vídeos fica salvo no Supabase (não no .env) — assim dá pra trocar
+// direto pela tela, sem precisar mexer no .env local nem publicar o site de novo.
+function PastaVideosBotao() {
+  const [link, setLink] = useState("");
+  const [rascunho, setRascunho] = useState("");
+  const [aberto, setAberto] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState("");
+  const ref = useRef(null);
+
+  useEffect(() => {
+    obterLinkPastaVideos()
+      .then((v) => {
+        setLink(v);
+        setRascunho(v);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!aberto) return;
+    const onDocClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setAberto(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [aberto]);
+
+  const handleSalvar = async () => {
+    setErro("");
+    setSalvando(true);
+    try {
+      const novo = rascunho.trim();
+      await salvarLinkPastaVideos(novo);
+      setLink(novo);
+      setAberto(false);
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <span className="col-filter" ref={ref}>
+      <button
+        type="button"
+        className="button button-outline button-icon icon-btn-tooltip"
+        data-tooltip="Abrir ou alterar a pasta de vídeos"
+        onClick={(e) => {
+          e.stopPropagation();
+          setAberto((a) => !a);
+        }}
+      >
+        📁
+      </button>
+      {aberto && (
+        <div className="col-filter-dropdown pasta-videos-dropdown" onClick={(e) => e.stopPropagation()}>
+          <label className="field-label">Link da pasta de vídeos</label>
+          <input
+            value={rascunho}
+            onChange={(e) => setRascunho(e.target.value)}
+            placeholder="https://...sharepoint.com/:f:/..."
+            autoFocus
+          />
+          {erro && <p className="login-erro">{erro}</p>}
+          <div className="pasta-videos-actions">
+            <button type="button" onClick={handleSalvar} disabled={salvando}>
+              {salvando ? "Salvando..." : "Salvar"}
+            </button>
+            {link && (
+              <a href={link} target="_blank" rel="noreferrer" onClick={() => setAberto(false)}>
+                Abrir pasta ↗
+              </a>
+            )}
+          </div>
         </div>
       )}
     </span>
@@ -578,17 +659,7 @@ export default function OperacoesPage() {
           >
             🔄
           </button>
-          {videosFolderUrl && (
-            <a
-              href={videosFolderUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="button button-outline button-icon icon-btn-tooltip"
-              data-tooltip="Abrir pasta de vídeos"
-            >
-              📁
-            </a>
-          )}
+          <PastaVideosBotao />
           {status && <span className="status-pill">{status}</span>}
           <span className="count-pill">{operacoes.length}</span>
         </div>

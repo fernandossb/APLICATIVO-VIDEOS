@@ -37,7 +37,7 @@ O acesso é por usuário (`nome.sobrenome`) e senha, não e-mail — por baixo �
 
 **Criar o primeiro administrador** (precisa ser feito uma vez, direto no painel do Supabase):
 
-1. Rode também [`supabase/capacidade.sql`](./supabase/capacidade.sql) e [`supabase/auth.sql`](./supabase/auth.sql) no SQL Editor (nessa ordem, depois de `schema.sql` e `storage.sql`).
+1. Rode também [`supabase/capacidade.sql`](./supabase/capacidade.sql), [`supabase/configuracoes.sql`](./supabase/configuracoes.sql) e [`supabase/auth.sql`](./supabase/auth.sql) no SQL Editor (nessa ordem, depois de `schema.sql` e `storage.sql`).
 2. Em **Authentication → Users → Add user**, crie com e-mail `nome.sobrenome@costuraflow.local`, uma senha, e marque **Auto Confirm User**.
 3. No **SQL Editor**, rode (trocando o e-mail):
    ```sql
