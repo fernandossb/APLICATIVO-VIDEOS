@@ -334,14 +334,17 @@ function EditarOperacaoModal({ operacao, onSalvar, onFechar }) {
           <span className="field-label">Vídeos</span>
           <div className="video-links-edit">
             {videos.length === 0 && (
-              <p className="hint">Nenhum vídeo cadastrado ainda — clique em "Adicionar vídeo" e cole o link.</p>
+              <p className="hint">
+                Nenhum vídeo cadastrado ainda — clique em "Adicionar vídeo" e cole o link do YouTube (recomendado,
+                sobe o vídeo como "Não listado") ou de outra fonte.
+              </p>
             )}
             {videos.map((v, i) => (
               <div className="video-link-row" key={i}>
                 <input
                   value={v.url}
                   onChange={(e) => setVideoUrl(i, e.target.value)}
-                  placeholder="https://... (link do vídeo)"
+                  placeholder="Link do YouTube (ou outro link de vídeo)"
                 />
                 <button
                   type="button"
