@@ -1,4 +1,5 @@
 import { useState } from "react";
+import logoUp from "../assets/logo-up.webp";
 import { signIn } from "../lib/auth";
 
 export default function LoginScreen() {
@@ -19,7 +20,7 @@ export default function LoginScreen() {
   return (
     <div className="login-screen">
       <form className="login-card" onSubmit={handleSubmit}>
-        <div className="brand-mark login-brand-mark">CF</div>
+        <img src={logoUp} alt="UP" className="brand-logo login-brand-logo" />
         <h1>CosturaFlow</h1>
         <p className="muted">Entre com seu usuário para acessar</p>
 

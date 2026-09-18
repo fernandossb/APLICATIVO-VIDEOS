@@ -1,17 +1,19 @@
 :root {
-  --bg: #f6f8f8;
+  /* Paleta em tons de preto/cinza — os nomes de variável ficaram do tom
+     antigo (teal), mas os valores agora são a paleta neutra da marca. */
+  --bg: #f4f4f5;
   --surface: #ffffff;
-  --surface-soft: #edf5f4;
-  --text: #1c2628;
-  --muted: #69777a;
-  --line: #dce4e4;
-  --line-strong: #c5d2d1;
-  --teal: #006a70;
-  --teal-dark: #004f53;
-  --teal-soft: #dff1ef;
+  --surface-soft: #ececec;
+  --text: #1b1b1d;
+  --muted: #6b6c70;
+  --line: #dcdcdf;
+  --line-strong: #bdbdc2;
+  --teal: #2c2c2e;
+  --teal-dark: #131315;
+  --teal-soft: #e4e4e6;
   --amber: #d08a10;
   --danger: #a84732;
-  --shadow: 0 16px 44px rgba(18, 42, 44, 0.12);
+  --shadow: 0 16px 44px rgba(0, 0, 0, 0.16);
   --radius: 8px;
   font-family: "Segoe UI", Arial, sans-serif;
 }
@@ -52,7 +54,7 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(0, 106, 112, 0.12);
+  box-shadow: 0 0 0 3px rgba(20, 20, 22, 0.12);
 }
 
 textarea {
@@ -79,7 +81,8 @@ textarea {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 18px 20px;
+  /* espaço extra em cima/à esquerda pro botão fixo de mostrar/ocultar painéis não cobrir a logo */
+  padding: 44px 18px 20px 60px;
 }
 
 .nav-brand strong {
@@ -96,17 +99,11 @@ textarea {
   font-size: 11px;
 }
 
-.brand-mark {
-  display: grid;
-  width: 36px;
-  height: 36px;
+.brand-logo {
+  width: 42px;
+  height: 42px;
   flex: none;
-  place-items: center;
-  border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  font-weight: 800;
-  font-size: 12px;
+  object-fit: contain;
 }
 
 .nav-group {
@@ -154,6 +151,35 @@ textarea {
   min-height: 0;
 }
 
+/* botao fixo pra mostrar/ocultar os paineis laterais (menu + lista da pagina) */
+.painel-toggle {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 50;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: none;
+  border-radius: 999px;
+  background: var(--teal-dark);
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: var(--shadow);
+}
+
+.painel-toggle:hover {
+  background: var(--teal);
+}
+
+/* ocultar no computador so tira os paineis do layout — o conteudo ocupa o espaco */
+.app-shell.paineis-ocultos .nav-rail,
+.app-shell.paineis-ocultos .sidebar {
+  display: none;
+}
+
 .app-loading {
   display: grid;
   height: 100vh;
@@ -184,9 +210,10 @@ textarea {
   text-align: center;
 }
 
-.login-brand-mark {
+.login-brand-logo {
+  width: 64px;
+  height: 64px;
   margin: 0 auto 4px;
-  background: var(--teal-dark);
 }
 
 .login-card h1 {
@@ -542,6 +569,12 @@ textarea {
   padding: 16px 28px;
 }
 
+/* com os paineis ocultos, o conteudo ocupa a tela toda — abre espaco pro
+   botao fixo de mostrar painel não cobrir o titulo da pagina */
+.app-shell.paineis-ocultos .topbar {
+  padding-left: 62px;
+}
+
 .overline {
   display: block;
   margin: 0 0 4px;
@@ -561,6 +594,7 @@ textarea {
 
 .topbar-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }
@@ -2075,15 +2109,47 @@ tr.code-missing .from-catalog {
     flex-direction: column;
   }
 
-  .nav-rail {
+  /* essa era a peça que faltava: sem isso, o corpo da página (lista + conteúdo)
+     continuava tentando ficar lado a lado mesmo com a tela estreita */
+  .app-body {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* no celular os painéis somem por padrão — não cabem do lado do conteúdo.
+     o botão de mostrar/ocultar (topo-esquerda) traz eles de volta como uma
+     gaveta cobrindo a tela toda, igual um menu hambúrguer comum. */
+  .nav-rail,
+  .sidebar {
+    display: none;
     width: 100%;
   }
 
   .sidebar {
-    width: 100%;
     min-height: auto;
     border-right: none;
     border-bottom: 1px solid var(--line);
+  }
+
+  .app-shell.paineis-visiveis {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    overflow-y: auto;
+    background: var(--teal-dark);
+  }
+
+  .app-shell.paineis-visiveis .nav-rail,
+  .app-shell.paineis-visiveis .sidebar {
+    display: flex;
+  }
+
+  .app-shell.paineis-visiveis .app-body {
+    display: block;
+  }
+
+  .app-shell.paineis-visiveis .workspace {
+    display: none;
   }
 
   .content-panel {
@@ -2095,7 +2161,7 @@ tr.code-missing .from-catalog {
   }
 
   .topbar {
-    padding: 14px 16px;
+    padding: 14px 16px 14px 62px;
   }
 
   .edit-table-head,
@@ -2108,5 +2174,67 @@ tr.code-missing .from-catalog {
   .defect-table .edit-table-head,
   .defect-table .edit-table-row {
     grid-template-columns: 1fr;
+  }
+}
+
+/* impressao/pdf da ficha tecnica: renderiza as abas escolhidas, uma embaixo da
+   outra, direto no <body> (fora da árvore do app-shell, via portal) — escondido
+   da tela normal e revelado só na hora de imprimir. Esconder o app-shell inteiro
+   (em vez do truque de "visibility" no body todo) é o que faz isso funcionar
+   também ao gerar PDF direto (Chrome não renderiza direito o truque de
+   visibility nesse modo, só numa impressão/preview normal). */
+.print-view {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 1.5cm;
+  }
+
+  .app-shell {
+    display: none;
+  }
+
+  .print-view {
+    display: block;
+  }
+
+  .print-title {
+    margin: 0 0 20px;
+    font-size: 20px;
+  }
+
+  .print-tab-section {
+    break-inside: avoid-page;
+  }
+
+  .print-tab-section + .print-tab-section {
+    break-before: page;
+  }
+
+  .print-tab-section h2 {
+    margin: 0 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #000;
+    font-size: 16px;
+  }
+
+  /* dentro da copia impressa, campo de formulario vira texto de documento */
+  .print-view input,
+  .print-view select,
+  .print-view textarea {
+    border: none;
+    background: none;
+    padding: 1px 0;
+    color: #000;
+  }
+
+  /* nada de botao, dica de uso nem formulario de "adicionar" numa folha impressa */
+  .print-view button,
+  .print-view .hint,
+  .print-view .image-slot-empty,
+  .print-view .inline-add-form {
+    display: none !important;
   }
 }
