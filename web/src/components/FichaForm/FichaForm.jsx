@@ -7,6 +7,8 @@ import InsumosTab from "./InsumosTab";
 import ComentariosTab from "./ComentariosTab";
 import RoteiroTab from "./RoteiroTab";
 import ImprimirFichaModal from "./ImprimirFichaModal";
+import { operacoesStore } from "../../lib/storage";
+import logoUp from "../../assets/logo-up.webp";
 
 const TABS = [
   { key: "capa", label: "Capa", Component: CapaTab },
@@ -23,6 +25,7 @@ export default function FichaForm({ ficha, onChange, onSave, status }) {
   const [tab, setTab] = useState("capa");
   const [modalImprimir, setModalImprimir] = useState(false);
   const [abasImpressao, setAbasImpressao] = useState(null);
+  const [catalogoImpressao, setCatalogoImpressao] = useState([]);
   const Active = TABS.find((t) => t.key === tab).Component;
 
   const update = (patch) => onChange({ ...ficha, ...patch });
@@ -84,10 +87,13 @@ export default function FichaForm({ ficha, onChange, onSave, status }) {
           // impressão só precisa esconder o app-shell inteiro e mostrar isto aqui, sem o
           // truque de "visibility" que o Chrome não renderiza direito ao gerar PDF.
           <div className="print-view">
-            <h1 className="print-title">
-              {ficha.referencia || "Ficha técnica"}
-              {ficha.descricao ? ` — ${ficha.descricao}` : ""}
-            </h1>
+            <div className="print-header">
+              <img src={logoUp} alt="UP" className="print-logo" />
+              <h1 className="print-title">
+                {ficha.referencia || "Ficha técnica"}
+                {ficha.descricao ? ` — ${ficha.descricao}` : ""}
+              </h1>
+            </div>
             {abasImpressao.map((chave) => {
               const t = TABS.find((tt) => tt.key === chave);
               if (!t) return null;
@@ -95,7 +101,7 @@ export default function FichaForm({ ficha, onChange, onSave, status }) {
               return (
                 <section className="print-tab-section" key={chave}>
                   <h2>{t.label}</h2>
-                  <TabImpressa ficha={ficha} update={semEdicao} />
+                  <TabImpressa ficha={ficha} update={semEdicao} catalogoFixo={catalogoImpressao} />
                 </section>
               );
             })}
@@ -107,8 +113,13 @@ export default function FichaForm({ ficha, onChange, onSave, status }) {
         <ImprimirFichaModal
           tabs={TABS}
           onFechar={() => setModalImprimir(false)}
-          onImprimir={(chaves) => {
+          onImprimir={async (chaves) => {
             setModalImprimir(false);
+            // Busca o catálogo ANTES de montar a cópia de impressão: se o RoteiroTab
+            // buscasse sozinho, o window.print() (disparado assim que abasImpressao muda)
+            // corria na frente da resposta e toda operação saía como "não cadastrada".
+            const catalogo = await operacoesStore.list();
+            setCatalogoImpressao(catalogo);
             setAbasImpressao(chaves);
           }}
         />

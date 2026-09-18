@@ -58,10 +58,10 @@ function OperacaoRow({ row, info, tempo, onChangeCodigo, onChangeObservacao, onU
   );
 }
 
-export default function RoteiroTab({ ficha, update }) {
+export default function RoteiroTab({ ficha, update, catalogoFixo }) {
   const roteiro = ficha.roteiro || [];
   const grupoTecido = ficha.grupoTecido || "G1";
-  const [catalogo, setCatalogo] = useState([]);
+  const [catalogo, setCatalogo] = useState(catalogoFixo || []);
   const [picker, setPicker] = useState(null);
 
   // Toca o vídeo direto (dentro do próprio site) quando só tem um; com mais de um,
@@ -74,8 +74,12 @@ export default function RoteiroTab({ ficha, update }) {
   };
 
   useEffect(() => {
+    // Na cópia de impressão o catálogo já vem pronto por fora (catalogoFixo),
+    // evitando a corrida entre esta busca assíncrona e o window.print() disparado
+    // logo em seguida — sem isso, a impressão saía com tudo "não cadastrada".
+    if (catalogoFixo) return;
     operacoesStore.list().then(setCatalogo);
-  }, []);
+  }, [catalogoFixo]);
 
   const porCodigo = useMemo(() => {
     const map = {};

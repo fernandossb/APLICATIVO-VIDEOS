@@ -2104,7 +2104,11 @@ tr.code-missing .from-catalog {
   font-size: 12px;
 }
 
-@media (max-width: 860px) {
+/* "screen and": sem isso, essas regras (achando que a tela é estreita) também valiam
+   na impressão/PDF -- a folha A4 (menos as margens) mede menos que 860px de largura,
+   então a tabela de "Itens e entregas" etc. saía toda espremida numa coluna só,
+   desperdiçando um monte de papel em branco */
+@media screen and (max-width: 860px) {
   .app-shell {
     flex-direction: column;
   }
@@ -2198,26 +2202,93 @@ tr.code-missing .from-catalog {
 
   .print-view {
     display: block;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .print-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 18px;
+  }
+
+  .print-logo {
+    height: 30px;
+    width: auto;
+    flex: none;
   }
 
   .print-title {
-    margin: 0 0 20px;
+    margin: 0;
     font-size: 20px;
   }
 
-  .print-tab-section {
-    break-inside: avoid-page;
-  }
-
+  /* cada aba comeca numa folha nova (quebra "por aba"), mas o conteudo dela
+     flui livremente dentro dessas folhas — sem isso (break-inside:avoid-page),
+     uma aba comprida como a Capa era empurrada inteira pra pagina 2 por nao
+     caber ao lado do titulo, deixando a folha 1 quase em branco */
   .print-tab-section + .print-tab-section {
     break-before: page;
   }
 
   .print-tab-section h2 {
-    margin: 0 0 12px;
-    padding-bottom: 6px;
+    margin: 0 0 10px;
+    padding-bottom: 5px;
     border-bottom: 2px solid #000;
     font-size: 16px;
+    break-after: avoid-page;
+  }
+
+  /* espacamentos reduzidos so na copia impressa, pra aproveitar melhor a folha */
+  .print-view h3.sub {
+    margin: 12px 0 7px;
+    font-size: 13px;
+  }
+
+  .print-view .tab-panel {
+    gap: 3px;
+  }
+
+  .print-view .field-grid-edit {
+    gap: 7px 16px;
+    margin-bottom: 9px;
+  }
+
+  .print-view th,
+  .print-view td {
+    padding: 4px 6px;
+  }
+
+  .print-view .edit-table-head,
+  .print-view .edit-table-row {
+    padding: 4px 6px;
+    gap: 6px;
+  }
+
+  .print-view .insumos-group {
+    margin-bottom: 12px;
+  }
+
+  .print-view .percentage-grid {
+    gap: 6px;
+  }
+
+  .print-view .percentage-grid div {
+    padding: 6px 8px;
+  }
+
+  .print-view .chip-grid {
+    gap: 5px;
+    margin-top: 5px;
+  }
+
+  .print-view .image-slot-preview {
+    gap: 5px;
+  }
+
+  .print-view .image-slot-preview img {
+    max-height: 130px;
   }
 
   /* dentro da copia impressa, campo de formulario vira texto de documento */
