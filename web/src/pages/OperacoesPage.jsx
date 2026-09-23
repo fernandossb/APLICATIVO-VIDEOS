@@ -208,7 +208,7 @@ const OperacaoRow = memo(function OperacaoRow({ op, selecionado, onSelect }) {
         <input
           type="radio"
           checked={selecionado}
-          onChange={() => onSelect(op.id)}
+          readOnly
           aria-label={`Selecionar operação ${op.codigo}`}
         />
       </td>
