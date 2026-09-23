@@ -1,4 +1,5 @@
 import { departamentosComentario } from "../../data/constants";
+import AutoGrowTextarea from "../AutoGrowTextarea";
 
 export default function ComentariosTab({ ficha, update }) {
   const comentarios = ficha.comentarios || { modelagem: [], engenharia: [], pilotagem: [], marketing: [] };
@@ -24,7 +25,10 @@ export default function ComentariosTab({ ficha, update }) {
             {(comentarios[key] || []).map((row, i) => (
               <div className="edit-table-row" key={i}>
                 <input type="date" value={row.data} onChange={(e) => setRow(key, i, { data: e.target.value })} />
-                <input value={row.comentario} onChange={(e) => setRow(key, i, { comentario: e.target.value })} />
+                <AutoGrowTextarea
+                  value={row.comentario}
+                  onChange={(e) => setRow(key, i, { comentario: e.target.value })}
+                />
                 <input value={row.responsavel} onChange={(e) => setRow(key, i, { responsavel: e.target.value })} />
                 <button type="button" className="icon-button tiny" onClick={() => removeRow(key, i)} title="Remover">
                   ×

@@ -384,6 +384,7 @@ export default function OperacoesPage() {
   const [selecionadoId, setSelecionadoId] = useState(null);
   const [modalEdicao, setModalEdicao] = useState(null);
   const [confirmacao, setConfirmacao] = useState(null);
+  const [ondeUsa, setOndeUsa] = useState(null);
   const operacoesRef = useRef([]);
 
   useEffect(() => {
@@ -557,6 +558,26 @@ export default function OperacoesPage() {
     }
   };
 
+  // Mesma busca do fluxo de exclusão, mas só pra consulta: lista os fluxos
+  // (roteiros de ficha técnica) que usam a operação selecionada.
+  const handleOndeUsaClick = async () => {
+    const op = operacoes.find((o) => o.id === selecionadoId);
+    if (!op) return;
+    const codigo = op.codigo.trim();
+
+    setStatus("Verificando uso em fichas técnicas...");
+    try {
+      const fichas = await fichasStore.list();
+      const usadoEm = fichas.filter((f) =>
+        (f.roteiro || []).some((r) => r.tipo === "operacao" && r.codigo === codigo)
+      );
+      setOndeUsa({ op, usadoEm });
+      setStatus("");
+    } catch (err) {
+      setStatus(`Erro ao verificar uso: ${err.message}`);
+    }
+  };
+
   const confirmarExclusao = async () => {
     const op = confirmacao.op;
     setConfirmacao(null);
@@ -625,6 +646,15 @@ export default function OperacoesPage() {
             data-tooltip="Excluir operação selecionada"
           >
             🗑
+          </button>
+          <button
+            type="button"
+            className="button button-outline button-icon icon-btn-tooltip"
+            disabled={!selecionadoId}
+            onClick={handleOndeUsaClick}
+            data-tooltip="Onde usa: ver os fluxos que usam a operação selecionada"
+          >
+            🔎
           </button>
           <button
             type="button"
@@ -740,6 +770,48 @@ export default function OperacoesPage() {
 
       {modalEdicao && (
         <EditarOperacaoModal operacao={modalEdicao} onSalvar={handleSalvarModal} onFechar={() => setModalEdicao(null)} />
+      )}
+
+      {ondeUsa && (
+        <div className="modal">
+          <div className="modal-backdrop" onClick={() => setOndeUsa(null)} />
+          <div className="modal-card">
+            <div className="modal-head">
+              <div>
+                <p className="overline">{ondeUsa.op.codigo}</p>
+                <h2>Onde usa</h2>
+              </div>
+              <button type="button" className="icon-button" onClick={() => setOndeUsa(null)} title="Fechar">
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              {ondeUsa.usadoEm.length > 0 ? (
+                <>
+                  <p>
+                    Esta operação está no roteiro d
+                    {ondeUsa.usadoEm.length === 1 ? "esta ficha técnica" : "estas fichas técnicas"}:
+                  </p>
+                  <ul className="modal-list">
+                    {ondeUsa.usadoEm.map((f) => (
+                      <li key={f.id}>
+                        {f.referencia || "(sem referência)"}
+                        {f.descricao ? ` — ${f.descricao}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p>Nenhuma ficha técnica usa esta operação no roteiro ainda.</p>
+              )}
+            </div>
+            <div className="modal-foot">
+              <button type="button" className="button button-outline" onClick={() => setOndeUsa(null)}>
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {confirmacao && (

@@ -893,7 +893,12 @@ label.full-width {
 
 .comment-table .edit-table-head,
 .comment-table .edit-table-row {
-  grid-template-columns: 140px 2fr 1fr 32px;
+  grid-template-columns: 120px 3fr 0.8fr 32px;
+  align-items: start;
+}
+
+.comment-table .edit-table-head {
+  align-items: center;
 }
 
 .defect-table .edit-table-head,
@@ -952,6 +957,11 @@ label.full-width {
   margin-bottom: 20px;
 }
 
+/* cada imagem em sua própria linha, ocupando a largura inteira da página */
+.image-grid-full {
+  grid-template-columns: 1fr;
+}
+
 .image-slot {
   width: 100%;
 }
@@ -988,10 +998,9 @@ label.full-width {
 
 .image-slot-preview img {
   width: 100%;
-  max-height: 220px;
+  height: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  object-fit: contain;
   background: #fff;
 }
 
@@ -1045,8 +1054,41 @@ tbody tr:last-child td {
   border-bottom: 0;
 }
 
-.measure-table input {
-  min-width: 64px;
+.measure-table .col-medida {
+  width: auto;
+  min-width: 280px;
+}
+
+.measure-table .col-tamanho {
+  width: 60px;
+}
+
+.measure-table td.col-tamanho input {
+  min-width: 0;
+  text-align: center;
+}
+
+.insumos-table .col-descricao {
+  width: auto;
+  min-width: 240px;
+}
+
+.insumos-table .col-codigo,
+.insumos-table .col-consumo,
+.insumos-table .col-variante {
+  width: 90px;
+}
+
+.insumos-table .col-aplicacao {
+  width: 150px;
+}
+
+/* textarea que cresce sozinha (medida, descrição de insumo, comentário) */
+.autogrow-textarea {
+  resize: none;
+  overflow: hidden;
+  min-height: 38px;
+  line-height: 1.35;
 }
 
 .route-table-wrap table {
