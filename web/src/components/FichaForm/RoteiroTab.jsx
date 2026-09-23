@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { operacoesStore } from "../../lib/storage";
 import { tempoPorGrupoTecido } from "../../data/constants";
-import SearchBox from "../SearchBox";
 import VideoPickerModal from "./VideoPickerModal";
 
 function RowActions({ onUp, onDown, onRemove }) {
@@ -22,13 +21,14 @@ function RowActions({ onUp, onDown, onRemove }) {
 
 function OperacaoRow({ row, info, tempo, onChangeCodigo, onChangeObservacao, onUp, onDown, onRemove, onPlay }) {
   const naoCadastrada = row.codigo && !info;
+  const temVideo = (info?.videos?.length || 0) > 0;
   return (
     <tr className={naoCadastrada ? "code-missing" : ""}>
       <td>
         <input list="operacoes-catalogo" value={row.codigo} onChange={onChangeCodigo} placeholder="10004" />
       </td>
       <td className="from-catalog">{info?.grupoMaquina || (naoCadastrada ? "—" : "")}</td>
-      <td className="from-catalog">
+      <td className="from-catalog col-desc">
         {info?.descricao || (naoCadastrada ? "não cadastrada no Banco de Operações" : "")}
       </td>
       <td>
@@ -38,7 +38,13 @@ function OperacaoRow({ row, info, tempo, onChangeCodigo, onChangeObservacao, onU
       <td className="from-catalog">{info?.metodo || ""}</td>
       <td className="col-video">
         {row.codigo ? (
-          <button type="button" className="play-button" onClick={onPlay} title="Buscar vídeos desta operação">
+          <button
+            type="button"
+            className="play-button"
+            onClick={onPlay}
+            disabled={!temVideo}
+            title={temVideo ? "Assistir vídeo desta operação" : "Nenhum vídeo cadastrado para este código"}
+          >
             ▶
           </button>
         ) : (
@@ -52,38 +58,28 @@ function OperacaoRow({ row, info, tempo, onChangeCodigo, onChangeObservacao, onU
   );
 }
 
-export default function RoteiroTab({ ficha, update }) {
+export default function RoteiroTab({ ficha, update, catalogoFixo }) {
   const roteiro = ficha.roteiro || [];
   const grupoTecido = ficha.grupoTecido || "G1";
-  const [catalogo, setCatalogo] = useState([]);
-  const [busca, setBusca] = useState("");
+  const [catalogo, setCatalogo] = useState(catalogoFixo || []);
   const [picker, setPicker] = useState(null);
 
-  const buscarVideos = async (codigo, descricao, videosImportados) => {
-    setPicker({ codigo, descricao, status: "carregando", videos: [] });
-
-    // Tenta a busca ao vivo no OneDrive (se a integração com o Graph estiver configurada);
-    // se não estiver, cai para a lista trazida pela importação do sincronizar-videos-onedrive.ps1.
-    try {
-      const res = await fetch(`/api/videos-por-codigo?codigo=${encodeURIComponent(codigo)}`);
-      const ehJson = (res.headers.get("content-type") || "").includes("application/json");
-      if (ehJson) {
-        const dados = await res.json();
-        if (res.ok) {
-          setPicker({ codigo, descricao, status: "pronto", videos: dados.videos || [] });
-          return;
-        }
-      }
-    } catch {
-      // segue para a lista importada abaixo
-    }
-
-    setPicker({ codigo, descricao, status: "pronto", videos: videosImportados || [] });
+  // Toca o vídeo direto (dentro do próprio site) quando só tem um; com mais de um,
+  // mostra a lista pra escolher primeiro. Os vídeos vêm do cadastro da operação (link
+  // colado à mão, importado do OneDrive ou achado ao vivo pelo "Verificar vídeos" —
+  // tanto faz a origem, todos caem no mesmo campo).
+  const handlePlay = (codigo, descricao, videos) => {
+    const lista = videos || [];
+    setPicker({ codigo, descricao, videos: lista, tocando: lista.length === 1 ? lista[0] : null });
   };
 
   useEffect(() => {
+    // Na cópia de impressão o catálogo já vem pronto por fora (catalogoFixo),
+    // evitando a corrida entre esta busca assíncrona e o window.print() disparado
+    // logo em seguida — sem isso, a impressão saía com tudo "não cadastrada".
+    if (catalogoFixo) return;
     operacoesStore.list().then(setCatalogo);
-  }, []);
+  }, [catalogoFixo]);
 
   const porCodigo = useMemo(() => {
     const map = {};
@@ -92,6 +88,26 @@ export default function RoteiroTab({ ficha, update }) {
   }, [catalogo]);
 
   const tempoDaOperacao = (codigo) => tempoPorGrupoTecido(porCodigo[codigo]?.tempoG1, grupoTecido);
+
+  // Resumo por setor: cada "estágio" no roteiro vira uma seção, somando o
+  // tempo das operações que vêm logo depois dele até o próximo estágio.
+  function resumoPorSetor() {
+    const setores = [];
+    let atual = null;
+    for (const row of roteiro) {
+      if (row.tipo === "estagio") {
+        atual = { nome: row.nome?.trim() || "(sem nome)", tempo: 0 };
+        setores.push(atual);
+      } else if (row.tipo === "operacao") {
+        if (!atual) {
+          atual = { nome: "Sem estágio", tempo: 0 };
+          setores.push(atual);
+        }
+        atual.tempo += tempoDaOperacao(row.codigo);
+      }
+    }
+    return setores;
+  }
 
   const setRows = (rows) => update({ roteiro: rows });
   const setRow = (i, patch) => setRows(roteiro.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -112,25 +128,12 @@ export default function RoteiroTab({ ficha, update }) {
 
   const semCadastro = roteiro.filter((r) => r.tipo === "operacao" && r.codigo && !porCodigo[r.codigo]).length;
 
-  const termo = busca.trim().toLowerCase();
   const linhasComIndice = roteiro.map((row, i) => ({ row, i }));
-  const linhasExibidas = termo
-    ? linhasComIndice.filter(({ row }) => {
-        if (row.tipo !== "operacao") return false;
-        const info = porCodigo[row.codigo];
-        return [row.codigo, row.observacao, info?.descricao, info?.grupoMaquina].some((campo) =>
-          String(campo || "").toLowerCase().includes(termo)
-        );
-      })
-    : linhasComIndice;
+  const resumoSetores = resumoPorSetor();
 
   return (
     <div className="tab-panel">
       <div className="flow-toolbar">
-        <div>
-          <span>Tempo total do roteiro ({grupoTecido})</span>
-          <strong>{totalTempo.toFixed(3)} min</strong>
-        </div>
         <div className="toolbar-metrics">
           <span>
             <strong>{roteiro.filter((r) => r.tipo === "operacao").length}</strong> operações
@@ -141,7 +144,6 @@ export default function RoteiroTab({ ficha, update }) {
             </span>
           )}
         </div>
-        <SearchBox value={busca} onChange={setBusca} placeholder="Buscar no roteiro..." />
       </div>
 
       <div className="table-wrap route-table-wrap">
@@ -150,7 +152,7 @@ export default function RoteiroTab({ ficha, update }) {
             <tr>
               <th className="col-code">Código</th>
               <th className="col-group">Máquina</th>
-              <th>Descrição da operação</th>
+              <th className="col-desc">Descrição da operação</th>
               <th>Observação</th>
               <th className="col-time">Tempo ({grupoTecido})</th>
               <th>Método</th>
@@ -159,14 +161,7 @@ export default function RoteiroTab({ ficha, update }) {
             </tr>
           </thead>
           <tbody>
-            {termo && linhasExibidas.length === 0 && (
-              <tr>
-                <td colSpan={8}>
-                  <div className="empty-state">Nenhuma operação encontrada para "{busca}".</div>
-                </td>
-              </tr>
-            )}
-            {linhasExibidas.map(({ row, i }) =>
+            {linhasComIndice.map(({ row, i }) =>
               row.tipo === "estagio" ? (
                 <tr className="stage-row" key={i}>
                   <td colSpan={7}>
@@ -192,7 +187,7 @@ export default function RoteiroTab({ ficha, update }) {
                   onDown={() => move(i, 1)}
                   onRemove={() => removeRow(i)}
                   onPlay={() =>
-                    buscarVideos(row.codigo, porCodigo[row.codigo]?.descricao, porCodigo[row.codigo]?.videos)
+                    handlePlay(row.codigo, porCodigo[row.codigo]?.descricao, porCodigo[row.codigo]?.videos)
                   }
                 />
               )
@@ -216,19 +211,41 @@ export default function RoteiroTab({ ficha, update }) {
           + Estágio
         </button>
       </div>
+
+      <div className="resumo-setores">
+        <h3 className="sub">Resumo por setor</h3>
+        {resumoSetores.length === 0 ? (
+          <p className="muted">Adicione estágios e operações no roteiro para ver o resumo aqui.</p>
+        ) : (
+          <div className="resumo-setores-lista">
+            {resumoSetores.map((s, i) => (
+              <div className="resumo-setor-item" key={i}>
+                <span>{s.nome}</span>
+                <strong>{s.tempo.toFixed(3)} min</strong>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="resumo-setor-total">
+          <span>Total do roteiro ({grupoTecido})</span>
+          <strong>{totalTempo.toFixed(3)} min</strong>
+        </div>
+      </div>
+
       <p className="hint">
         Máquina, descrição e método vêm do Banco de Operações pelo código — só a observação é específica desta
-        ficha. O tempo mostrado já considera o grupo de tecido escolhido na Capa ({grupoTecido}). O botão ▶ mostra os
-        vídeos já importados do OneDrive para aquele código (veja "Importar vídeos" no Banco de Operações).
+        ficha. O tempo mostrado já considera o grupo de tecido escolhido na Capa ({grupoTecido}). O botão ▶ abre
+        direto o vídeo cadastrado para aquele código, ou mostra a lista se houver mais de um (cadastre os links
+        editando a operação no Banco de Operações).
       </p>
 
       {picker && (
         <VideoPickerModal
           codigo={picker.codigo}
           descricao={picker.descricao}
-          status={picker.status}
           videos={picker.videos}
-          mensagem={picker.mensagem}
+          tocando={picker.tocando}
+          onSelecionar={(v) => setPicker({ ...picker, tocando: v })}
           onClose={() => setPicker(null)}
         />
       )}

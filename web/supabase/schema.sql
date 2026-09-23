@@ -24,6 +24,9 @@ create policy "fichas_insert_authenticated" on public.fichas
 create policy "fichas_update_authenticated" on public.fichas
   for update using (auth.role() = 'authenticated');
 
+create policy "fichas_delete_authenticated" on public.fichas
+  for delete using (auth.role() = 'authenticated');
+
 create table if not exists public.operacoes (
   id uuid primary key default gen_random_uuid(),
   codigo text not null default '',
