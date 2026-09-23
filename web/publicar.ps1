@@ -2,10 +2,13 @@ $nodeFolder = Get-ChildItem "$PWD\tools\node" -Directory | Select-Object -First 
 $env:Path = "$($nodeFolder.FullName);$env:Path"
 $gitExe = Get-ChildItem -Path "$PWD\tools\git" -Filter "git.exe" -Recurse | Select-Object -First 1
 $env:Path = "$($gitExe.DirectoryName);$env:Path"
-$env:NETLIFY_AUTH_TOKEN = "nfp_gAyvjpSZ98yM4GCarvt6hFeGyCR5GZaff49f"
+if (-not $env:NETLIFY_AUTH_TOKEN) {
+  Write-Error "Defina a variavel de ambiente NETLIFY_AUTH_TOKEN (Netlify > User settings > Applications > Personal access tokens) antes de rodar este script."
+  exit 1
+}
 $syncTmp = "$env:TEMP\costuraflow-sync"
 Remove-Item $syncTmp -Recurse -Force -ErrorAction SilentlyContinue
-git clone --depth 1 --branch claude/ficha-tecnica-web-link-dift9d https://github.com/fernandossb/APLICATIVO-VIDEOS.git $syncTmp
+git clone --depth 1 --branch master https://github.com/fernandossb/APLICATIVO-VIDEOS.git $syncTmp
 robocopy "$syncTmp\web\src" "src" /MIR
 robocopy "$syncTmp\web\netlify" "netlify" /MIR
 robocopy "$syncTmp\web\supabase" "supabase" /MIR
