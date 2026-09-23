@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ImageSlot from "./ImageSlot";
+import AutoGrowTextarea from "../AutoGrowTextarea";
 
 export default function ModelagemTab({ ficha, update }) {
   const medidas = ficha.medidas || { tamanhos: ["P", "M", "G", "GG"], linhas: [] };
@@ -31,9 +32,9 @@ export default function ModelagemTab({ ficha, update }) {
         <table className="measure-table">
           <thead>
             <tr>
-              <th>Medida</th>
+              <th className="col-medida">Medida</th>
               {medidas.tamanhos.map((t) => (
-                <th key={t}>
+                <th key={t} className="col-tamanho">
                   {t}{" "}
                   <button type="button" className="icon-button tiny" onClick={() => removeTamanho(t)} title="Remover tamanho">
                     ×
@@ -46,15 +47,15 @@ export default function ModelagemTab({ ficha, update }) {
           <tbody>
             {medidas.linhas.map((linha, i) => (
               <tr key={i}>
-                <td>
-                  <input
+                <td className="col-medida">
+                  <AutoGrowTextarea
                     value={linha.medida}
                     onChange={(e) => setLinha(i, { medida: e.target.value })}
                     placeholder="Ex.: Comprimento (ombro até fim da frente)"
                   />
                 </td>
                 {medidas.tamanhos.map((t) => (
-                  <td key={t}>
+                  <td key={t} className="col-tamanho">
                     <input value={linha.valores[t] ?? ""} onChange={(e) => setValor(i, t, e.target.value)} />
                   </td>
                 ))}
@@ -80,7 +81,7 @@ export default function ModelagemTab({ ficha, update }) {
       </button>
 
       <h3 className="sub">Desenhos e diagramas</h3>
-      <div className="image-grid">
+      <div className="image-grid image-grid-full">
         <div>
           <span className="field-label">Desenho com medidas</span>
           <ImageSlot value={imagens.desenhoMedidas} onChange={setImagem("desenhoMedidas")} />

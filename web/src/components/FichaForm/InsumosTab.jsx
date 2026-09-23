@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { gruposInsumosSugeridos } from "../../data/constants";
+import AutoGrowTextarea from "../AutoGrowTextarea";
 
 export default function InsumosTab({ ficha, update }) {
   const grupos = ficha.gruposInsumos || [];
@@ -45,15 +46,15 @@ export default function InsumosTab({ ficha, update }) {
             </button>
           </div>
           <div className="table-wrap">
-            <table>
+            <table className="insumos-table">
               <thead>
                 <tr>
-                  <th>Descrição</th>
-                  <th>Cód. Material</th>
-                  <th>Aplicação</th>
-                  <th>Consumo</th>
+                  <th className="col-descricao">Descrição</th>
+                  <th className="col-codigo">Cód. Material</th>
+                  <th className="col-aplicacao">Aplicação</th>
+                  <th className="col-consumo">Consumo</th>
                   {variantes.map((v) => (
-                    <th key={v.codigo || v.nomeCor}>{v.nomeCor || v.codigo}</th>
+                    <th key={v.codigo || v.nomeCor} className="col-variante">{v.nomeCor || v.codigo}</th>
                   ))}
                   <th />
                 </tr>
@@ -61,22 +62,25 @@ export default function InsumosTab({ ficha, update }) {
               <tbody>
                 {grupo.itens.map((item, ii) => (
                   <tr key={ii}>
-                    <td>
-                      <input value={item.descricao} onChange={(e) => setItem(gi, ii, { descricao: e.target.value })} />
+                    <td className="col-descricao">
+                      <AutoGrowTextarea
+                        value={item.descricao}
+                        onChange={(e) => setItem(gi, ii, { descricao: e.target.value })}
+                      />
                     </td>
-                    <td>
+                    <td className="col-codigo">
                       <input value={item.referencia} onChange={(e) => setItem(gi, ii, { referencia: e.target.value })} />
                     </td>
-                    <td>
+                    <td className="col-aplicacao">
                       <input value={item.aplicacao} onChange={(e) => setItem(gi, ii, { aplicacao: e.target.value })} />
                     </td>
-                    <td>
+                    <td className="col-consumo">
                       <input value={item.consumo} onChange={(e) => setItem(gi, ii, { consumo: e.target.value })} />
                     </td>
                     {variantes.map((v) => {
                       const key = v.codigo || v.nomeCor;
                       return (
-                        <td key={key}>
+                        <td key={key} className="col-variante">
                           <input
                             value={item.porVariante?.[key] ?? ""}
                             onChange={(e) =>
