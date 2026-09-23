@@ -1,17 +1,19 @@
 :root {
-  --bg: #f6f8f8;
+  /* Paleta em tons de preto/cinza — os nomes de variável ficaram do tom
+     antigo (teal), mas os valores agora são a paleta neutra da marca. */
+  --bg: #f4f4f5;
   --surface: #ffffff;
-  --surface-soft: #edf5f4;
-  --text: #1c2628;
-  --muted: #69777a;
-  --line: #dce4e4;
-  --line-strong: #c5d2d1;
-  --teal: #006a70;
-  --teal-dark: #004f53;
-  --teal-soft: #dff1ef;
+  --surface-soft: #ececec;
+  --text: #1b1b1d;
+  --muted: #6b6c70;
+  --line: #dcdcdf;
+  --line-strong: #bdbdc2;
+  --teal: #2c2c2e;
+  --teal-dark: #131315;
+  --teal-soft: #e4e4e6;
   --amber: #d08a10;
   --danger: #a84732;
-  --shadow: 0 16px 44px rgba(18, 42, 44, 0.12);
+  --shadow: 0 16px 44px rgba(0, 0, 0, 0.16);
   --radius: 8px;
   font-family: "Segoe UI", Arial, sans-serif;
 }
@@ -52,7 +54,7 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(0, 106, 112, 0.12);
+  box-shadow: 0 0 0 3px rgba(20, 20, 22, 0.12);
 }
 
 textarea {
@@ -79,7 +81,8 @@ textarea {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 18px 20px;
+  /* espaço extra em cima/à esquerda pro botão fixo de mostrar/ocultar painéis não cobrir a logo */
+  padding: 44px 18px 20px 60px;
 }
 
 .nav-brand strong {
@@ -96,17 +99,11 @@ textarea {
   font-size: 11px;
 }
 
-.brand-mark {
-  display: grid;
-  width: 36px;
-  height: 36px;
+.brand-logo {
+  width: 42px;
+  height: 42px;
   flex: none;
-  place-items: center;
-  border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  font-weight: 800;
-  font-size: 12px;
+  object-fit: contain;
 }
 
 .nav-group {
@@ -152,6 +149,193 @@ textarea {
   display: flex;
   flex: 1;
   min-height: 0;
+}
+
+/* botao fixo pra mostrar/ocultar os paineis laterais (menu + lista da pagina) */
+.painel-toggle {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 50;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: none;
+  border-radius: 999px;
+  background: var(--teal-dark);
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: var(--shadow);
+}
+
+.painel-toggle:hover {
+  background: var(--teal);
+}
+
+/* ocultar no computador so tira os paineis do layout — o conteudo ocupa o espaco */
+.app-shell.paineis-ocultos .nav-rail,
+.app-shell.paineis-ocultos .sidebar {
+  display: none;
+}
+
+.app-loading {
+  display: grid;
+  height: 100vh;
+  place-items: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* login */
+.login-screen {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  background: var(--bg);
+  padding: 24px;
+}
+
+.login-card {
+  display: flex;
+  width: min(360px, 100%);
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 32px 28px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.login-brand-logo {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 4px;
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.login-erro {
+  margin: -4px 0 0;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+/* rodape do menu: capacidade e usuario logado */
+.nav-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 18px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.nav-user span {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.75);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-user button {
+  flex: none;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.nav-user button:hover {
+  color: #fff;
+}
+
+/* indicador de capacidade */
+.capacidade-indicador {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.capacidade-titulo {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.capacidade-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.capacidade-item-head {
+  display: flex;
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+}
+
+.capacidade-barra {
+  overflow: hidden;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.capacidade-barra-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.capacidade-barra-fill.capacidade-success {
+  background: #4ade80;
+}
+
+.capacidade-barra-fill.capacidade-warning {
+  background: var(--amber);
+}
+
+.capacidade-barra-fill.capacidade-danger {
+  background: #f87171;
+}
+
+.capacidade-carregando,
+.capacidade-erro {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
 }
 
 .page {
@@ -202,15 +386,14 @@ textarea {
 }
 
 .file-card {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 2px;
   width: 100%;
   border: 1px solid transparent;
   border-radius: var(--radius);
   background: transparent;
-  color: var(--text);
-  cursor: pointer;
-  padding: 10px;
-  text-align: left;
+  padding: 4px;
 }
 
 .file-card:hover,
@@ -223,22 +406,135 @@ textarea {
   box-shadow: inset 3px 0 0 var(--teal);
 }
 
-.file-title {
-  overflow: hidden;
+.file-card-main {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  padding: 6px;
+  text-align: left;
+}
+
+.file-card-actions {
+  display: flex;
+  flex: none;
+  gap: 2px;
+}
+
+.icon-button-neutral {
+  color: var(--muted);
+}
+
+.icon-button-neutral:hover {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: #fff;
+}
+
+.sidebar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.sidebar-actions .button {
+  flex: 1;
+  min-height: 34px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.sidebar-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-filters select {
+  font-size: 12.5px;
+}
+
+.admin-novo-usuario {
+  max-width: 640px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 24px;
+}
+
+/* galeria de colecoes (tela inicial da ficha tecnica) */
+.sidebar-back {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--teal);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar-back:hover {
+  text-decoration: underline;
+}
+
+.colecoes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 6cm);
+  gap: 20px;
+}
+
+.colecao-card {
+  display: flex;
+  width: 6cm;
+  min-height: 6cm;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 16px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.colecao-card:hover {
+  border-color: var(--teal);
+  box-shadow: var(--shadow);
+}
+
+.colecao-card strong {
+  overflow-wrap: break-word;
+  font-size: 17px;
+  color: var(--teal-dark);
+}
+
+.colecao-card span {
+  color: var(--muted);
   font-size: 13px;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.colecao-card-todas {
+  border-color: var(--teal-dark);
+  background: var(--teal-soft);
+}
+
+.file-title {
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: break-word;
 }
 
 .file-meta {
   display: block;
-  overflow: hidden;
   margin-top: 3px;
   color: var(--muted);
   font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
 }
 
 .muted {
@@ -273,6 +569,12 @@ textarea {
   padding: 16px 28px;
 }
 
+/* com os paineis ocultos, o conteudo ocupa a tela toda — abre espaco pro
+   botao fixo de mostrar painel não cobrir o titulo da pagina */
+.app-shell.paineis-ocultos .topbar {
+  padding-left: 62px;
+}
+
 .overline {
   display: block;
   margin: 0 0 4px;
@@ -287,10 +589,12 @@ textarea {
   margin: 0;
   font-size: 21px;
   line-height: 1.2;
+  overflow-wrap: break-word;
 }
 
 .topbar-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }
@@ -389,6 +693,64 @@ h3.sub {
 
 .button-primary:hover {
   background: var(--teal);
+}
+
+.button-danger-outline {
+  border-color: #ecc8bd;
+  background: #fff;
+  color: var(--danger);
+}
+
+.button-danger-outline:hover {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* botoes so-icone (banco de operacoes) com dica ao passar o mouse */
+.button-icon {
+  width: 40px;
+  padding: 0;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.icon-btn-tooltip {
+  position: relative;
+}
+
+.icon-btn-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 20;
+  width: max-content;
+  max-width: 220px;
+  transform: translateX(-50%);
+  border-radius: 6px;
+  background: var(--teal-dark);
+  color: #fff;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: none;
+  text-align: center;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.icon-btn-tooltip:hover::after {
+  opacity: 1;
+  transition-delay: 1.5s;
 }
 
 .full-width {
@@ -493,6 +855,23 @@ label.full-width {
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.video-links-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.video-link-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.video-link-row input {
+  flex: 1;
 }
 
 /* editable list tables (capa status, comentarios) */
@@ -719,6 +1098,12 @@ tbody tr:last-child td {
   color: #fff;
 }
 
+.play-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 tr.stage-row {
   background: #b8c0c2;
 }
@@ -742,41 +1127,23 @@ tr.stage-row input {
   margin: 0;
 }
 
-.toolbar-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-
 .banco-table-wrap table {
   min-width: 1200px;
 }
 
-.banco-table-wrap .col-code input {
-  min-width: 70px;
-}
-
-.banco-table-wrap .col-group input {
-  min-width: 80px;
+.col-desc {
+  max-width: 420px;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .banco-table-wrap .col-desc {
   min-width: 260px;
 }
 
-.banco-table-wrap .col-desc input {
-  min-width: 240px;
-}
-
-.banco-table-wrap .col-time input,
 .banco-table-wrap td.col-time.computed {
   min-width: 64px;
   text-align: right;
-}
-
-.banco-table-wrap .col-method select {
-  min-width: 100px;
 }
 
 .banco-table-wrap .col-status {
@@ -789,27 +1156,29 @@ tr.stage-row input {
   font-size: 12px;
 }
 
-.banco-table-wrap .col-actions {
-  width: 40px;
+/* linhas mais compactas (banco de operacoes: linhas viraram somente leitura) */
+.tabela-compacta th {
+  padding: 6px 10px;
 }
 
-.status-select {
+.tabela-compacta td {
+  padding: 4px 10px;
+}
+
+.status-pill-inline {
   display: inline-block;
-  width: auto;
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 4px 10px;
   font-size: 12px;
   font-weight: 700;
 }
 
-.status-select.status-warning {
-  border-color: #fde7ba;
+.status-pill-inline.status-warning {
   background: #fef3c7;
   color: #92600a;
 }
 
-.status-select.status-success {
-  border-color: #cdeed8;
+.status-pill-inline.status-success {
   background: #dcfce7;
   color: #15803d;
 }
@@ -830,6 +1199,185 @@ tr.stage-row input {
 
 tr.draft-row {
   background: #fffdf2;
+}
+
+/* selecao de linha (banco de operacoes) */
+.col-select {
+  width: 34px;
+  text-align: center;
+}
+
+.col-select input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--teal);
+  cursor: pointer;
+}
+
+tr.row-selected,
+tr.row-selected:hover {
+  background: var(--teal-soft);
+}
+
+/* filtro no titulo da coluna, estilo Excel */
+.th-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.col-filter {
+  position: relative;
+  display: inline-flex;
+}
+
+.col-filter-trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 0;
+}
+
+.col-filter-trigger:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text);
+}
+
+.col-filter-trigger.active {
+  background: var(--teal-dark);
+  color: #fff;
+}
+
+.col-filter-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 25;
+  width: 220px;
+  max-height: 280px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow);
+  text-transform: none;
+  font-weight: 400;
+  padding: 8px;
+}
+
+.col-filter-search {
+  margin-bottom: 6px;
+}
+
+.col-filter-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.col-filter-actions button {
+  border: none;
+  background: none;
+  color: var(--teal-dark);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.col-filter-actions button:hover {
+  text-decoration: underline;
+}
+
+.pasta-videos-dropdown {
+  width: 260px;
+}
+
+.pasta-videos-dropdown .field-label {
+  margin-bottom: 6px;
+}
+
+.pasta-videos-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.pasta-videos-actions button {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--teal-dark);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pasta-videos-actions button:hover {
+  text-decoration: underline;
+}
+
+.pasta-videos-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pasta-videos-actions a {
+  color: var(--teal);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.pasta-videos-actions a:hover {
+  text-decoration: underline;
+}
+
+.col-filter-list {
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.col-filter-list li + li {
+  margin-top: 2px;
+}
+
+.col-filter-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.col-filter-list label:hover {
+  background: var(--surface-soft);
+}
+
+.col-filter-list input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--teal);
+}
+
+.col-filter-empty {
+  padding: 6px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .insumos-group {
@@ -895,6 +1443,59 @@ tr.draft-row {
   border-color: var(--amber);
   background: #fbf1de;
   color: #8a5a10;
+}
+
+/* resumo por setor (roteiro da ficha tecnica) */
+.resumo-setores {
+  margin-top: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 16px 18px;
+}
+
+.resumo-setores-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.resumo-setor-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+}
+
+.resumo-setor-item span {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.resumo-setor-item strong {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.resumo-setor-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 2px solid var(--teal-dark);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--teal-dark);
+}
+
+.resumo-setor-total strong {
+  font-variant-numeric: tabular-nums;
 }
 
 .from-catalog {
@@ -1359,6 +1960,11 @@ tr.code-missing .from-catalog {
   flex-direction: column;
 }
 
+.modal-card-wide {
+  width: min(760px, calc(100vw - 32px));
+  max-height: min(85vh, 680px);
+}
+
 .modal-head {
   display: flex;
   align-items: flex-start;
@@ -1373,51 +1979,181 @@ tr.code-missing .from-catalog {
   font-size: 16px;
 }
 
-.video-picker-list {
+.modal-body {
+  padding: 16px 18px;
   overflow-y: auto;
-  margin: 0;
-  padding: 10px;
-  list-style: none;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-.video-picker-list li + li {
-  margin-top: 4px;
+.modal-body p {
+  margin: 0 0 10px;
 }
 
-.video-picker-list a {
+.modal-list {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+
+.modal-list li {
+  margin-bottom: 4px;
+}
+
+.modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding: 12px 18px;
+}
+
+.video-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+  overflow-y: auto;
+  padding: 16px 18px;
+}
+
+.video-thumb-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.video-thumb-wrap {
+  position: relative;
+}
+
+.video-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius);
+  background: #000;
+  object-fit: cover;
+}
+
+.video-thumb-card:hover .video-thumb {
+  outline: 2px solid var(--teal);
+  outline-offset: 1px;
+}
+
+.video-thumb-generico {
   display: flex;
   align-items: center;
-  gap: 12px;
-  border-radius: var(--radius);
-  padding: 10px 12px;
-  color: var(--text);
-  text-decoration: none;
+  justify-content: center;
+  color: #fff;
+  font-size: 26px;
+  background: #16232a;
+}
+
+.video-thumb-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  transform: translate(-50%, -50%);
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
   font-size: 14px;
-  font-weight: 600;
-}
-
-.video-picker-list a:hover {
-  background: var(--surface-soft);
-}
-
-.video-picker-list .play-button {
   pointer-events: none;
 }
 
-@media (max-width: 860px) {
+.video-thumb-label {
+  overflow-wrap: break-word;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.video-player-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+.video-embed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.video-embed-media {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 60vh;
+  border: none;
+  border-radius: var(--radius);
+  background: #000;
+}
+
+.video-fallback-link {
+  align-self: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* "screen and": sem isso, essas regras (achando que a tela é estreita) também valiam
+   na impressão/PDF -- a folha A4 (menos as margens) mede menos que 860px de largura,
+   então a tabela de "Itens e entregas" etc. saía toda espremida numa coluna só,
+   desperdiçando um monte de papel em branco */
+@media screen and (max-width: 860px) {
   .app-shell {
     flex-direction: column;
   }
 
-  .nav-rail {
+  /* essa era a peça que faltava: sem isso, o corpo da página (lista + conteúdo)
+     continuava tentando ficar lado a lado mesmo com a tela estreita */
+  .app-body {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* no celular os painéis somem por padrão — não cabem do lado do conteúdo.
+     o botão de mostrar/ocultar (topo-esquerda) traz eles de volta como uma
+     gaveta cobrindo a tela toda, igual um menu hambúrguer comum. */
+  .nav-rail,
+  .sidebar {
+    display: none;
     width: 100%;
   }
 
   .sidebar {
-    width: 100%;
     min-height: auto;
     border-right: none;
     border-bottom: 1px solid var(--line);
+  }
+
+  .app-shell.paineis-visiveis {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    overflow-y: auto;
+    background: var(--teal-dark);
+  }
+
+  .app-shell.paineis-visiveis .nav-rail,
+  .app-shell.paineis-visiveis .sidebar {
+    display: flex;
+  }
+
+  .app-shell.paineis-visiveis .app-body {
+    display: block;
+  }
+
+  .app-shell.paineis-visiveis .workspace {
+    display: none;
   }
 
   .content-panel {
@@ -1429,7 +2165,7 @@ tr.code-missing .from-catalog {
   }
 
   .topbar {
-    padding: 14px 16px;
+    padding: 14px 16px 14px 62px;
   }
 
   .edit-table-head,
@@ -1442,5 +2178,134 @@ tr.code-missing .from-catalog {
   .defect-table .edit-table-head,
   .defect-table .edit-table-row {
     grid-template-columns: 1fr;
+  }
+}
+
+/* impressao/pdf da ficha tecnica: renderiza as abas escolhidas, uma embaixo da
+   outra, direto no <body> (fora da árvore do app-shell, via portal) — escondido
+   da tela normal e revelado só na hora de imprimir. Esconder o app-shell inteiro
+   (em vez do truque de "visibility" no body todo) é o que faz isso funcionar
+   também ao gerar PDF direto (Chrome não renderiza direito o truque de
+   visibility nesse modo, só numa impressão/preview normal). */
+.print-view {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 1.5cm;
+  }
+
+  .app-shell {
+    display: none;
+  }
+
+  .print-view {
+    display: block;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .print-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 18px;
+  }
+
+  .print-logo {
+    height: 30px;
+    width: auto;
+    flex: none;
+  }
+
+  .print-title {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  /* cada aba comeca numa folha nova (quebra "por aba"), mas o conteudo dela
+     flui livremente dentro dessas folhas — sem isso (break-inside:avoid-page),
+     uma aba comprida como a Capa era empurrada inteira pra pagina 2 por nao
+     caber ao lado do titulo, deixando a folha 1 quase em branco */
+  .print-tab-section + .print-tab-section {
+    break-before: page;
+  }
+
+  .print-tab-section h2 {
+    margin: 0 0 10px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #000;
+    font-size: 16px;
+    break-after: avoid-page;
+  }
+
+  /* espacamentos reduzidos so na copia impressa, pra aproveitar melhor a folha */
+  .print-view h3.sub {
+    margin: 12px 0 7px;
+    font-size: 13px;
+  }
+
+  .print-view .tab-panel {
+    gap: 3px;
+  }
+
+  .print-view .field-grid-edit {
+    gap: 7px 16px;
+    margin-bottom: 9px;
+  }
+
+  .print-view th,
+  .print-view td {
+    padding: 4px 6px;
+  }
+
+  .print-view .edit-table-head,
+  .print-view .edit-table-row {
+    padding: 4px 6px;
+    gap: 6px;
+  }
+
+  .print-view .insumos-group {
+    margin-bottom: 12px;
+  }
+
+  .print-view .percentage-grid {
+    gap: 6px;
+  }
+
+  .print-view .percentage-grid div {
+    padding: 6px 8px;
+  }
+
+  .print-view .chip-grid {
+    gap: 5px;
+    margin-top: 5px;
+  }
+
+  .print-view .image-slot-preview {
+    gap: 5px;
+  }
+
+  .print-view .image-slot-preview img {
+    max-height: 130px;
+  }
+
+  /* dentro da copia impressa, campo de formulario vira texto de documento */
+  .print-view input,
+  .print-view select,
+  .print-view textarea {
+    border: none;
+    background: none;
+    padding: 1px 0;
+    color: #000;
+  }
+
+  /* nada de botao, dica de uso nem formulario de "adicionar" numa folha impressa */
+  .print-view button,
+  .print-view .hint,
+  .print-view .image-slot-empty,
+  .print-view .inline-add-form {
+    display: none !important;
   }
 }
