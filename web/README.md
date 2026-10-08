@@ -37,19 +37,18 @@ O `schema.sql` cria a tabela `fichas` com uma coluna `jsonb` guardando a ficha i
 
 O acesso é por usuário (`nome.sobrenome`) e senha, não e-mail — por baixo é Supabase Auth, usando um domínio interno (`@costuraflow.local`) que nunca recebe mensagem de verdade.
 
-**Criar o primeiro administrador** (precisa ser feito uma vez, direto no painel do Supabase):
+**Criar usuários** (feito direto no painel do Supabase — o site não tem tela de cadastro):
 
 1. Rode também [`supabase/capacidade.sql`](./supabase/capacidade.sql), [`supabase/configuracoes.sql`](./supabase/configuracoes.sql) e [`supabase/auth.sql`](./supabase/auth.sql) no SQL Editor (nessa ordem, depois de `schema.sql` e `storage.sql`).
 2. Em **Authentication → Users → Add user**, crie com e-mail `nome.sobrenome@costuraflow.local`, uma senha, e marque **Auto Confirm User**.
-3. No **SQL Editor**, rode (trocando o e-mail):
+3. (Opcional, só para administradores) No **SQL Editor**, rode (trocando o e-mail):
    ```sql
    update auth.users
    set raw_app_meta_data = raw_app_meta_data || '{"role":"admin"}'::jsonb
    where email = 'nome.sobrenome@costuraflow.local';
    ```
-4. Em **Project Settings → Environment Variables** (ou nas variáveis de ambiente do Netlify, se for lá que o deploy publica), copie a **service_role key** (Project Settings → API) para uma variável `SUPABASE_SERVICE_ROLE_KEY`. **Nunca** coloque essa chave com o prefixo `VITE_` nem no `.env` do navegador — ela dá acesso total ao banco e só pode existir no lado do servidor (a função `netlify/functions/admin-usuarios.mjs` é quem usa).
 
-Depois de logado como administrador, aparece um menu **Administração → Usuários** para criar/excluir os próximos acessos direto pela tela, sem precisar do painel do Supabase.
+Para excluir um acesso, use **Authentication → Users** no painel do Supabase.
 
 ## Vídeo por código, sem cadastrar link (caminho atual)
 

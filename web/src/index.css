@@ -456,13 +456,6 @@ textarea {
   font-size: 12.5px;
 }
 
-.admin-novo-usuario {
-  max-width: 640px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 24px;
-}
-
 /* galeria de colecoes (tela inicial da ficha tecnica) */
 .sidebar-back {
   border: none;
