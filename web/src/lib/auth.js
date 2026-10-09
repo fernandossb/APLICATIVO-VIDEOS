@@ -28,6 +28,13 @@ export function signIn(usuario, senha) {
   return supabase.auth.signInWithPassword({ email: usuarioParaEmail(usuario), password: senha });
 }
 
+export function signUp(usuario, senha) {
+  return supabase.auth.signUp({
+    email: usuarioParaEmail(usuario),
+    password: senha,
+  });
+}
+
 export function signOut() {
   return supabase.auth.signOut();
 }
