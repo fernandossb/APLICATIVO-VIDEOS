@@ -56,7 +56,7 @@ export default function ModelagemTab({ ficha, update }) {
                 </td>
                 {medidas.tamanhos.map((t) => (
                   <td key={t} className="col-tamanho">
-                    <input value={linha.valores[t] ?? ""} onChange={(e) => setValor(i, t, e.target.value)} />
+                    <AutoGrowTextarea value={linha.valores[t] ?? ""} onChange={(e) => setValor(i, t, e.target.value)} />
                   </td>
                 ))}
                 <td>

@@ -1,11 +1,19 @@
+import { useEffect, useState } from "react";
 import { departamentosComentario } from "../../data/constants";
 import AutoGrowTextarea from "../AutoGrowTextarea";
+import { emailParaUsuario, getSession } from "../../lib/auth";
 
 export default function ComentariosTab({ ficha, update }) {
   const comentarios = ficha.comentarios || { modelagem: [], engenharia: [], pilotagem: [], marketing: [] };
 
+  const [usuario, setUsuario] = useState("");
+  useEffect(() => {
+    getSession().then((s) => setUsuario(s?.user?.email ? emailParaUsuario(s.user.email) : ""));
+  }, []);
+
   const setDept = (key, rows) => update({ comentarios: { ...comentarios, [key]: rows } });
-  const addRow = (key) => setDept(key, [...(comentarios[key] || []), { data: "", comentario: "", responsavel: "" }]);
+  const addRow = (key) =>
+    setDept(key, [...(comentarios[key] || []), { data: "", comentario: "", responsavel: usuario }]);
   const setRow = (key, i, patch) =>
     setDept(key, comentarios[key].map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   const removeRow = (key, i) => setDept(key, comentarios[key].filter((_, idx) => idx !== i));
@@ -29,7 +37,13 @@ export default function ComentariosTab({ ficha, update }) {
                   value={row.comentario}
                   onChange={(e) => setRow(key, i, { comentario: e.target.value })}
                 />
-                <input value={row.responsavel} onChange={(e) => setRow(key, i, { responsavel: e.target.value })} />
+                <AutoGrowTextarea
+                  value={row.responsavel || usuario}
+                  readOnly={!!usuario}
+                  className={usuario ? "readonly-field" : ""}
+                  title={usuario ? "Preenchido automaticamente com o usuário logado" : undefined}
+                  onChange={(e) => setRow(key, i, { responsavel: e.target.value })}
+                />
                 <button type="button" className="icon-button tiny" onClick={() => removeRow(key, i)} title="Remover">
                   ×
                 </button>

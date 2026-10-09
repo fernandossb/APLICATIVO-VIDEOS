@@ -1,4 +1,5 @@
 import ImageSlot from "./ImageSlot";
+import AutoGrowTextarea from "../AutoGrowTextarea";
 
 export default function VariantesTab({ ficha, update }) {
   const variantes = ficha.variantes || [];
@@ -18,8 +19,8 @@ export default function VariantesTab({ ficha, update }) {
           <div className="color-chip-edit" key={i}>
             <ImageSlot value={v.imagem} onChange={(img) => setVariant(i, { imagem: img })} label={v.nomeCor} compact />
             <div className="color-chip-fields">
-              <input placeholder="Código (ex.: PT08)" value={v.codigo} onChange={(e) => setVariant(i, { codigo: e.target.value })} />
-              <input placeholder="Cor (ex.: PRETO)" value={v.nomeCor} onChange={(e) => setVariant(i, { nomeCor: e.target.value })} />
+              <AutoGrowTextarea placeholder="Código (ex.: PT08)" value={v.codigo} onChange={(e) => setVariant(i, { codigo: e.target.value })} />
+              <AutoGrowTextarea placeholder="Cor (ex.: PRETO)" value={v.nomeCor} onChange={(e) => setVariant(i, { nomeCor: e.target.value })} />
             </div>
             <button type="button" className="icon-button tiny" onClick={() => removeVariant(i)} title="Remover">
               ×

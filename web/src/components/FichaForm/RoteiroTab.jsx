@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { operacoesStore } from "../../lib/storage";
 import { tempoPorGrupoTecido } from "../../data/constants";
 import VideoPickerModal from "./VideoPickerModal";
+import AutoGrowTextarea from "../AutoGrowTextarea";
 
 function RowActions({ onUp, onDown, onRemove }) {
   return (
@@ -31,8 +32,8 @@ function OperacaoRow({ row, info, tempo, onChangeCodigo, onChangeObservacao, onU
       <td className="from-catalog col-desc">
         {info?.descricao || (naoCadastrada ? "não cadastrada no Banco de Operações" : "")}
       </td>
-      <td>
-        <input value={row.observacao} onChange={onChangeObservacao} />
+      <td className="col-observacao">
+        <AutoGrowTextarea value={row.observacao} onChange={onChangeObservacao} />
       </td>
       <td className="from-catalog">{info ? tempo.toFixed(4) : naoCadastrada ? "—" : ""}</td>
       <td className="from-catalog">{info?.metodo || ""}</td>

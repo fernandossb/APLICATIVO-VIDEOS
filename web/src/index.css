@@ -1053,12 +1053,14 @@ tbody tr:last-child td {
 }
 
 .measure-table .col-tamanho {
-  width: 60px;
+  width: 110px;
+  min-width: 100px;
 }
 
-.measure-table td.col-tamanho input {
+.measure-table td.col-tamanho textarea {
   min-width: 0;
   text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .insumos-table .col-descricao {
@@ -1067,13 +1069,24 @@ tbody tr:last-child td {
 }
 
 .insumos-table .col-codigo,
-.insumos-table .col-consumo,
+.insumos-table .col-consumo {
+  width: 110px;
+  min-width: 100px;
+}
+
 .insumos-table .col-variante {
-  width: 90px;
+  width: 130px;
+  min-width: 120px;
+}
+
+.insumos-table th {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .insumos-table .col-aplicacao {
-  width: 150px;
+  width: 170px;
+  min-width: 150px;
 }
 
 /* textarea que cresce sozinha (medida, descrição de insumo, comentário) */
@@ -1082,6 +1095,22 @@ tbody tr:last-child td {
   overflow: hidden;
   min-height: 38px;
   line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+textarea.readonly-field {
+  background: var(--surface-soft);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.route-table td.col-observacao {
+  min-width: 220px;
+  width: 28%;
+}
+
+.color-chip-fields .autogrow-textarea {
+  min-width: 0;
 }
 
 .route-table-wrap table {

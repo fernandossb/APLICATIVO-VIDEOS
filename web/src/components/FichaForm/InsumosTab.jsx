@@ -69,19 +69,19 @@ export default function InsumosTab({ ficha, update }) {
                       />
                     </td>
                     <td className="col-codigo">
-                      <input value={item.referencia} onChange={(e) => setItem(gi, ii, { referencia: e.target.value })} />
+                      <AutoGrowTextarea value={item.referencia} onChange={(e) => setItem(gi, ii, { referencia: e.target.value })} />
                     </td>
                     <td className="col-aplicacao">
-                      <input value={item.aplicacao} onChange={(e) => setItem(gi, ii, { aplicacao: e.target.value })} />
+                      <AutoGrowTextarea value={item.aplicacao} onChange={(e) => setItem(gi, ii, { aplicacao: e.target.value })} />
                     </td>
                     <td className="col-consumo">
-                      <input value={item.consumo} onChange={(e) => setItem(gi, ii, { consumo: e.target.value })} />
+                      <AutoGrowTextarea value={item.consumo} onChange={(e) => setItem(gi, ii, { consumo: e.target.value })} />
                     </td>
                     {variantes.map((v) => {
                       const key = v.codigo || v.nomeCor;
                       return (
                         <td key={key} className="col-variante">
-                          <input
+                          <AutoGrowTextarea
                             value={item.porVariante?.[key] ?? ""}
                             onChange={(e) =>
                               setItem(gi, ii, { porVariante: { ...item.porVariante, [key]: e.target.value } })
