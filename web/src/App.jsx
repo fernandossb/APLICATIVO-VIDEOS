@@ -100,7 +100,7 @@ export default function App() {
       <div className="app-body">
         {Object.entries(PAGES).map(([key, Page]) => (
           <div className="page" key={key} hidden={view !== key}>
-            <Page active={view === key} />
+            <Page key={`${key}-${sessao?.user?.id || "anon"}`} active={view === key} />
           </div>
         ))}
       </div>

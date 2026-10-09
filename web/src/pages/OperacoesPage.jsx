@@ -376,7 +376,7 @@ function EditarOperacaoModal({ operacao, onSalvar, onFechar }) {
   );
 }
 
-export default function OperacoesPage() {
+export default function OperacoesPage({ active }) {
   const [operacoes, setOperacoes] = useState([]);
   const [status, setStatus] = useState("");
   const [columnFilters, setColumnFilters] = useState({});
@@ -392,11 +392,13 @@ export default function OperacoesPage() {
   }, [operacoes]);
 
   useEffect(() => {
-    operacoesStore
-      .list()
-      .then(setOperacoes)
-      .catch((err) => setStatus(`Erro ao listar operações: ${err.message}`));
-  }, []);
+    if (active !== false) {
+      operacoesStore
+        .list()
+        .then(setOperacoes)
+        .catch((err) => setStatus(`Erro ao listar operações: ${err.message}`));
+    }
+  }, [active]);
 
   const abrirNova = () => setModalEdicao(emptyOperacao());
   const abrirAlterar = () => {

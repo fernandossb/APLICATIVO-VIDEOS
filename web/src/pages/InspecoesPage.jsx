@@ -23,7 +23,7 @@ function unicos(lista, campo) {
   );
 }
 
-export default function InspecoesPage() {
+export default function InspecoesPage({ active }) {
   const [inspecoes, setInspecoes] = useState([]);
   const [inspecao, setInspecao] = useState(emptyInspecao());
   const [status, setStatus] = useState("");
@@ -40,8 +40,10 @@ export default function InspecoesPage() {
   };
 
   useEffect(() => {
-    refresh();
-  }, []);
+    if (active !== false) {
+      refresh();
+    }
+  }, [active]);
 
   const setField = (key) => (e) => setInspecao({ ...inspecao, [key]: e.target.value });
 

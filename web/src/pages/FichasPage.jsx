@@ -65,7 +65,7 @@ function ColecoesGrid({ grupos, total, onSelecionar, onNovaFicha }) {
   );
 }
 
-export default function FichasPage() {
+export default function FichasPage({ active }) {
   const [fichas, setFichas] = useState([]);
   const [ficha, setFicha] = useState(emptyFicha());
   const [status, setStatus] = useState("");
@@ -81,8 +81,10 @@ export default function FichasPage() {
   };
 
   useEffect(() => {
-    refresh();
-  }, []);
+    if (active) {
+      refresh();
+    }
+  }, [active]);
 
   const handleNew = () => {
     const colecaoInicial = colecaoAtual && colecaoAtual !== TODAS ? colecaoAtual : "";
