@@ -131,6 +131,26 @@ export const NAV = [
     ],
   },
   {
+    group: "PCP",
+    items: [
+      { key: "pcp-dashboard", label: "Dashboard PCP" },
+      { key: "pcp-programacao", label: "Programação" },
+      { key: "pcp-prioridades", label: "Fila de Produção" },
+      { key: "pcp-retorno-ordens", label: "Retorno de OP" },
+      { key: "pcp-colecoes", label: "Coleções" },
+      { key: "pcp-importar", label: "Importar Relatórios" },
+    ],
+  },
+  {
+    group: "Compras",
+    items: [
+      { key: "compras-estoque", label: "Estoque Matéria-Prima" },
+      { key: "compras-consumo", label: "Consumo por Produto" },
+      { key: "compras-falta-comprar", label: "Falta Comprar" },
+      { key: "compras-relatorios", label: "Histórico de Cargas" },
+    ],
+  },
+  {
     group: "Qualidade",
     items: [
       { key: "qualidade-dashboard", label: "Dashboard" },
@@ -138,3 +158,4 @@ export const NAV = [
     ],
   },
 ];
+

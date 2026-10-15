@@ -4,8 +4,19 @@ import FichasPage from "./pages/FichasPage";
 import OperacoesPage from "./pages/OperacoesPage";
 import QualidadeDashboardPage from "./pages/QualidadeDashboardPage";
 import InspecoesPage from "./pages/InspecoesPage";
+import PcpDashboardPage from "./pages/pcp/PcpDashboardPage";
+import PcpProgramacaoPage from "./pages/pcp/PcpProgramacaoPage";
+import PcpPrioridadesPage from "./pages/pcp/PcpPrioridadesPage";
+import PcpRetornoOrdensPage from "./pages/pcp/PcpRetornoOrdensPage";
+import PcpColecoesPage from "./pages/pcp/PcpColecoesPage";
+import PcpImportarPage from "./pages/pcp/PcpImportarPage";
+import ComprasEstoquePage from "./pages/compras/ComprasEstoquePage";
+import ComprasConsumoPage from "./pages/compras/ComprasConsumoPage";
+import ComprasFaltaComprarPage from "./pages/compras/ComprasFaltaComprarPage";
+import ComprasRelatoriosPage from "./pages/compras/ComprasRelatoriosPage";
 import LoginScreen from "./components/LoginScreen";
 import CapacidadeIndicador from "./components/CapacidadeIndicador";
+import { PcpProvider } from "./lib/pcp/PcpContext";
 import { getSession, onAuthStateChange, signOut, emailParaUsuario } from "./lib/auth";
 import { supabaseConfigured } from "./lib/supabase";
 import { NAV } from "./data/constants";
@@ -13,6 +24,16 @@ import { NAV } from "./data/constants";
 const PAGES = {
   "ficha-tecnica": FichasPage,
   "banco-operacoes": OperacoesPage,
+  "pcp-dashboard": PcpDashboardPage,
+  "pcp-programacao": PcpProgramacaoPage,
+  "pcp-prioridades": PcpPrioridadesPage,
+  "pcp-retorno-ordens": PcpRetornoOrdensPage,
+  "pcp-colecoes": PcpColecoesPage,
+  "pcp-importar": PcpImportarPage,
+  "compras-estoque": ComprasEstoquePage,
+  "compras-consumo": ComprasConsumoPage,
+  "compras-falta-comprar": ComprasFaltaComprarPage,
+  "compras-relatorios": ComprasRelatoriosPage,
   "qualidade-dashboard": QualidadeDashboardPage,
   "qualidade-inspecoes": InspecoesPage,
 };
@@ -49,61 +70,63 @@ export default function App() {
   };
 
   return (
-    <div className={`app-shell ${painelAberto ? "paineis-visiveis" : "paineis-ocultos"}`}>
-      <button
-        type="button"
-        className="painel-toggle"
-        onClick={() => setPainelAberto((a) => !a)}
-        title={painelAberto ? "Ocultar painéis" : "Mostrar painéis"}
-      >
-        {painelAberto ? "✕" : "☰"}
-      </button>
+    <PcpProvider aoNavegar={irPara}>
+      <div className={`app-shell ${painelAberto ? "paineis-visiveis" : "paineis-ocultos"}`}>
+        <button
+          type="button"
+          className="painel-toggle"
+          onClick={() => setPainelAberto((a) => !a)}
+          title={painelAberto ? "Ocultar painéis" : "Mostrar painéis"}
+        >
+          {painelAberto ? "✕" : "☰"}
+        </button>
 
-      <nav className="nav-rail">
-        <div className="nav-brand">
-          <img src={logoUp} alt="UP" className="brand-logo" />
-          <div>
-            <strong>CosturaFlow</strong>
-            <span>Engenharia · Qualidade</span>
-          </div>
-        </div>
-
-        {NAV.map((group) => (
-          <div className="nav-group" key={group.group}>
-            <span className="nav-group-label">{group.group}</span>
-            {group.items.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                className={`nav-item${view === item.key ? " active" : ""}`}
-                onClick={() => irPara(item.key)}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        ))}
-
-        <div className="nav-footer">
-          <CapacidadeIndicador />
-          {sessao && (
-            <div className="nav-user">
-              <span title={sessao.user.email}>{emailParaUsuario(sessao.user.email)}</span>
-              <button type="button" onClick={signOut}>
-                Sair
-              </button>
+        <nav className="nav-rail">
+          <div className="nav-brand">
+            <img src={logoUp} alt="UP" className="brand-logo" />
+            <div>
+              <strong>CosturaFlow</strong>
+              <span>Engenharia · PCP · Compras</span>
             </div>
-          )}
-        </div>
-      </nav>
-
-      <div className="app-body">
-        {Object.entries(PAGES).map(([key, Page]) => (
-          <div className="page" key={key} hidden={view !== key}>
-            <Page key={`${key}-${sessao?.user?.id || "anon"}`} active={view === key} />
           </div>
-        ))}
+
+          {NAV.map((group) => (
+            <div className="nav-group" key={group.group}>
+              <span className="nav-group-label">{group.group}</span>
+              {group.items.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={`nav-item${view === item.key ? " active" : ""}`}
+                  onClick={() => irPara(item.key)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          ))}
+
+          <div className="nav-footer">
+            <CapacidadeIndicador />
+            {sessao && (
+              <div className="nav-user">
+                <span title={sessao.user.email}>{emailParaUsuario(sessao.user.email)}</span>
+                <button type="button" onClick={signOut}>
+                  Sair
+                </button>
+              </div>
+            )}
+          </div>
+        </nav>
+
+        <div className="app-body">
+          {Object.entries(PAGES).map(([key, Page]) => (
+            <div className="page" key={key} hidden={view !== key}>
+              <Page key={`${key}-${sessao?.user?.id || "anon"}`} active={view === key} />
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </PcpProvider>
   );
 }

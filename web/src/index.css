@@ -2373,3 +2373,482 @@ tr.code-missing .from-catalog {
     display: none !important;
   }
 }
+
+/* ==========================================================================
+   PCP & COMPRAS - SISTEMA VISUAL E TABELA MESTRA EXCEL
+   ========================================================================== */
+
+:root {
+  --sheet-header-bg: #0070c0;
+  --sheet-header-text: #ffffff;
+  --sheet-border: rgba(0, 0, 0, 0.45);
+  --sheet-border-width: 1px;
+  --cond-abaixo-minimo: rgba(255, 0, 0, 0.45);
+  --cond-acima-maximo: rgba(91, 155, 213, 0.5);
+  --cond-producao-atrasada: rgba(255, 192, 0, 0.5);
+  --cond-sem-estoque-disp: #ffff00;
+  --cond-prod-alto: rgba(112, 48, 160, 0.3);
+  --red-row: #fbd5d5;
+  --red-soft: #ffe8e8;
+  --green-soft: #e7f7eb;
+  --amber-soft: #fff4df;
+  --teal-soft: #e6f5f3;
+}
+
+/* Tabela Mestra de Programacao (Virtualizada, Frozen Columns, Excel Density) */
+.planning-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 13px;
+  --desloca-freeze: 0px;
+}
+
+.planning-table.com-selecao {
+  --desloca-freeze: 42px;
+}
+
+.planning-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.planning-table th {
+  height: 36px;
+  padding: 4px 6px;
+  background: var(--sheet-header-bg);
+  color: var(--sheet-header-text);
+  font-size: 11.5px;
+  font-weight: 800;
+  text-align: center;
+  vertical-align: middle;
+  border: 0;
+  border-right: var(--sheet-border-width) solid var(--sheet-border);
+  border-bottom: var(--sheet-border-width) solid var(--sheet-border);
+  white-space: normal;
+  overflow: hidden;
+  user-select: none;
+}
+
+.planning-table th:first-child,
+.planning-table td:first-child {
+  border-left: var(--sheet-border-width) solid var(--sheet-border);
+}
+
+.planning-table thead tr th {
+  border-top: var(--sheet-border-width) solid var(--sheet-border);
+}
+
+.planning-table td {
+  height: 24px;
+  padding: 1px 6px;
+  border: 0;
+  border-right: var(--sheet-border-width) solid var(--sheet-border);
+  border-bottom: var(--sheet-border-width) solid var(--sheet-border);
+  vertical-align: middle;
+  text-align: center;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.planning-table td.num,
+.planning-table th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.planning-table tbody tr {
+  background: #ffffff;
+}
+
+.planning-table tbody tr:hover,
+.planning-table tbody tr.selected {
+  background: #f0f7ff;
+}
+
+.planning-table tbody tr.inactive-row {
+  background: var(--red-row);
+}
+
+.planning-table tbody tr.inactive-row:hover,
+.planning-table tbody tr.inactive-row.selected {
+  background: #f8c1c1;
+}
+
+/* Colunas Congeladas (Freeze Left) */
+.planning-table th.freeze-1,
+.planning-table td.freeze-1 {
+  position: sticky;
+  left: var(--desloca-freeze);
+  z-index: 2;
+  background: #ffffff;
+}
+
+.planning-table th.freeze-2,
+.planning-table td.freeze-2 {
+  position: sticky;
+  left: calc(104px + var(--desloca-freeze));
+  z-index: 2;
+  background: #ffffff;
+}
+
+.planning-table th.freeze-3,
+.planning-table td.freeze-3 {
+  position: sticky;
+  left: calc(160px + var(--desloca-freeze));
+  z-index: 2;
+  background: #ffffff;
+  box-shadow: 2px 0 4px rgba(20, 32, 44, 0.12);
+}
+
+.planning-table thead th.freeze-1,
+.planning-table thead th.freeze-2,
+.planning-table thead th.freeze-3 {
+  z-index: 6;
+  background: var(--sheet-header-bg);
+}
+
+.planning-table tbody tr:hover td.freeze-1,
+.planning-table tbody tr:hover td.freeze-2,
+.planning-table tbody tr:hover td.freeze-3,
+.planning-table tbody tr.selected td.freeze-1,
+.planning-table tbody tr.selected td.freeze-2,
+.planning-table tbody tr.selected td.freeze-3 {
+  background: #f0f7ff;
+}
+
+.planning-table tbody tr.inactive-row td.freeze-1,
+.planning-table tbody tr.inactive-row td.freeze-2,
+.planning-table tbody tr.inactive-row td.freeze-3 {
+  background: var(--red-row);
+}
+
+/* Formatacao Condicional Mestra da Planilha */
+.cond-abaixo-minimo {
+  background: var(--cond-abaixo-minimo) !important;
+}
+
+.cond-acima-maximo {
+  background: var(--cond-acima-maximo) !important;
+}
+
+.cond-producao-atrasada {
+  background: var(--cond-producao-atrasada) !important;
+}
+
+.cond-sem-estoque-disp {
+  background: var(--cond-sem-estoque-disp) !important;
+  font-weight: 800;
+}
+
+.cond-prod-alto {
+  background: var(--cond-prod-alto) !important;
+}
+
+/* Entradas densas e status da tabela mestra */
+.planning-table .lote-input {
+  height: 20px;
+  width: 100%;
+  max-width: 68px;
+  padding: 0 4px;
+  border: 1px solid #cbd5df;
+  border-radius: 3px;
+  text-align: right;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: #ffffff;
+}
+
+.planning-table .lote-input:focus {
+  border-color: var(--teal);
+  outline: none;
+}
+
+.planning-table .status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  min-width: 42px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.planning-table .status.yes {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.planning-table .status.no {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.planning-table .status.sem-dado {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.planning-table .active-state {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.planning-table .active-state.on {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+.planning-table .active-state.off {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+/* Filtro Dropdown estilo Excel (FiltroColuna) */
+.filtro-coluna {
+  display: inline-block;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.filtro-funil {
+  padding: 0 3px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.filtro-funil:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.filtro-funil.ativo {
+  background: #f59e0b;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.filtro-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+}
+
+.filtro-painel {
+  position: fixed;
+  z-index: 50;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
+}
+
+.filtro-painel-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.filtro-painel input {
+  margin: 8px 10px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.filtro-opcoes {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.filtro-opcao {
+  display: block;
+  width: 100%;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.filtro-opcao:hover {
+  background: var(--surface-soft, #f0f7ff);
+}
+
+.filtro-opcao.marcada {
+  background: var(--teal, #008c86);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* Modulo Geral de Tabelas (Compras, Estoque, Consumo, Prioridades, etc.) */
+.module-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.module-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.module-table th {
+  background: var(--sheet-header-bg);
+  color: var(--sheet-header-text);
+  font-size: 12px;
+  font-weight: 800;
+  border: var(--sheet-border-width) solid var(--sheet-border);
+}
+
+.module-table td {
+  border: var(--sheet-border-width) solid var(--sheet-border);
+}
+
+.module-table tr:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* Faixas de Alerta */
+.faixa-aviso {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.faixa-aviso.erro {
+  border: 1px solid #ef4444;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.faixa-aviso.ok {
+  border: 1px solid #10b981;
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.faixa-aviso.atencao {
+  border: 1px solid #f59e0b;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Modal de Edicao de Produto & Curvas Mensais */
+.fundo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(16, 24, 32, 0.45);
+  overflow-y: auto;
+}
+
+.product-card {
+  width: min(1040px, calc(100vw - 32px));
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.product-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.product-grade {
+  padding: 0 20px 20px;
+}
+
+.grade-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.grade-table th,
+.grade-table td {
+  padding: 6px;
+  border: var(--sheet-border-width) solid var(--sheet-border);
+  text-align: center;
+}
+
+.grade-table th {
+  background: var(--sheet-header-bg);
+  color: var(--sheet-header-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.curva-bloco {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fafbfc;
+}
+
+.curva-meses {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.curva-meses label {
+  font-size: 10px;
+  text-align: center;
+}
+
+.curva-meses input {
+  width: 100%;
+  height: 26px;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 11px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
