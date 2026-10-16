@@ -431,7 +431,7 @@ export default function PcpProgramacaoPage() {
   }
 
   return (
-    <main className="workspace" style={{ padding: 0, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <main className="workspace" style={{ padding: 0, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <header className="topbar" style={{ padding: "10px 20px" }}>
         <div className="sheet-header-inline">
           <p className="overline">PCP · Engenharia & Produção</p>

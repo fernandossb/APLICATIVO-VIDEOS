@@ -165,7 +165,7 @@ export default function PcpPrioridadesPage() {
   }
 
   return (
-    <main className="workspace" style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+    <main className="workspace">
       <header className="topbar no-print">
         <div className="sheet-header-inline">
           <p className="overline">PCP · Fila de Corte e Costura</p>
@@ -193,11 +193,8 @@ export default function PcpPrioridadesPage() {
       <section
         className="content-panel"
         style={{
-          flex: 1,
-          minHeight: 0,
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden",
           margin: "14px 20px 16px",
         }}
       >
@@ -301,8 +298,8 @@ export default function PcpPrioridadesPage() {
           ref={wrapRef}
           onScroll={aoRolar}
           style={{
-            flex: 1,
-            minHeight: 0,
+            height: "calc(100vh - 290px)",
+            minHeight: 460,
             overflow: "auto",
             border: "1px solid var(--line)",
             borderRadius: "var(--radius)",

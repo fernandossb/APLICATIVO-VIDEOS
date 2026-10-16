@@ -157,7 +157,7 @@ export default function ComprasEstoquePage() {
   }
 
   return (
-    <main className="workspace" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <main className="workspace">
       <header className="topbar">
         <div className="sheet-header-inline">
           <p className="overline">Compras · Gestão de Materiais</p>
@@ -196,15 +196,12 @@ export default function ComprasEstoquePage() {
       <section
         className="content-panel"
         style={{
-          flex: 1,
-          minHeight: 0,
           display: "flex",
           flexDirection: "column",
           padding: "16px 24px",
           maxWidth: "100%",
           width: "100%",
           margin: 0,
-          overflow: "hidden",
         }}
       >
         {/* Indicadores Visuais */}
@@ -314,7 +311,7 @@ export default function ComprasEstoquePage() {
           className="table-scroll"
           ref={wrapRef}
           onScroll={aoRolar}
-          style={{ flex: 1, minHeight: 0, overflow: "auto" }}
+          style={{ height: "calc(100vh - 290px)", minHeight: 460, overflow: "auto" }}
         >
           {carregando ? (
             <div className="vazio-central" style={{ padding: 48, textAlign: "center" }}>

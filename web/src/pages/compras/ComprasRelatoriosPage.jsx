@@ -97,7 +97,7 @@ export default function ComprasRelatoriosPage() {
   }
 
   return (
-    <main className="workspace" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <main className="workspace">
       <header className="topbar">
         <div className="sheet-header-inline">
           <p className="overline">Compras & PCP · Auditoria de Dados</p>
