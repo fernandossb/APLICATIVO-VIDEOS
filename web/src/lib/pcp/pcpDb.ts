@@ -381,11 +381,17 @@ export const pcpDb = {
         const p = pedidosMap.get(numNorm) || pedidosMap.get(numNorm.replace(/^0+/, "")) || {};
         return {
           numero: String(pi.numero || "").trim(),
+          cliente: String(p.cliente || p.nome || "").trim(),
+          cidade: String(p.cidade || "").trim(),
+          estado: String(p.estado || "").trim(),
           referencia: String(pi.referencia || "").trim().toUpperCase(),
+          descricao: String(pi.descricao || "").trim(),
           cor: String(pi.cor || "").trim().toUpperCase(),
+          descCor: String(pi.descCor || pi.desc_cor || "").trim(),
           tam: String(pi.tam || "").trim().toUpperCase(),
           qtdePedida: Number(pi.qtdePedida) || 0,
           qtdeExpedida: Number(pi.qtdeExpedida) || 0,
+          dtFatura: p.dtFatura || p.dtEntrega || p.dtEmissao || "",
           dtEntrega: p.dtEntrega || "",
           dtEmissao: p.dtEmissao || "",
           descStatus: p.descStatus || p.status || "",

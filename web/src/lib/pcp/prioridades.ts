@@ -38,55 +38,85 @@ export function lancamentoDaLinha(
 
 export interface PedidoAberto {
   numero: string;
-  /** ISO `AAAA-MM-DD`, ou "" quando o pedido nao traz data. */
-  dtEntrega: string;
-  dtEmissao: string;
-  descStatus: string;
+  cliente?: string;
   referencia: string;
+  descricao?: string;
   cor: string;
+  descCor?: string;
   tam: string;
   qtdePedida: number;
   qtdeExpedida: number;
+  dtFatura?: string;
+  dtEntrega?: string;
+  dtEmissao?: string;
+  descStatus?: string;
+  cidade?: string;
+  estado?: string;
 }
 
 export interface EstoqueDisponivel {
   referencia: string;
   cor: string;
   tam: string;
-  /** Pecas prontas, do 721. */
+  /** Pecas prontas, do 721 ou 2020/2024. */
   estoque: number;
 }
 
 export interface LinhaPrioridade {
   numero: string;
+  cliente: string;
+  dtFatura: string;
   dtEntrega: string;
   dtEmissao: string;
   descStatus: string;
   referencia: string;
+  descricao: string;
   cor: string;
+  descCor: string;
   tam: string;
-  /** Pedido menos ja expedido: o que ainda falta entregar. */
+  /** Quantidade aberta (pedida menos já expedida). */
   aberta: number;
-  /** Quanto dessa quantidade o estoque atual cobre. */
+  /** Quanto dessa quantidade o estoque atual cobriu. */
   cobertoPorEstoque: number;
-  /** O que sobra para a producao fazer. */
+  /** O que sobra para a produção fazer. */
   faltaProduzir: number;
-  /** Dias ate a entrega. Negativo = atrasado. `null` = pedido sem data. */
+  /** Status do pedido como um todo: se faltou qualquer peça, o pedido está PENDURADO. */
+  statusPedido: "PENDURADO" | "COBERTO";
+  /** Status deste item específico no pedido. */
+  statusLinha: "PENDURADO" | "COBERTO";
+  /** Data de fatura a partir da qual o estoque deste produto esgotou na carteira. */
+  dtFaturaPrimeiraFalta?: string;
+  /** Dias até a data da fatura / entrega. Negativo = atrasado. */
   diasAteEntrega: number | null;
   atrasado: boolean;
+  cidade?: string;
+  estado?: string;
+}
+
+export interface RupturaProduto {
+  referencia: string;
+  descricao: string;
+  cor: string;
+  descCor: string;
+  tam: string;
+  dtFaturaPrimeiraFalta: string;
+  primeiroPedidoAfetado: string;
+  clientePrimeiroAfetado: string;
+  estoqueInicial: number;
+  faltaTotal: number;
+  demandaTotal: number;
 }
 
 function chave(referencia: string, cor: string, tam: string): string {
-  return `${referencia}|${cor}|${tam}`;
+  return `${String(referencia || "").trim().toUpperCase()}|${String(cor || "").trim().toUpperCase()}|${String(tam || "").trim().toUpperCase()}`;
 }
 
 /**
- * Dias entre hoje e a data de entrega. Recebe `hoje` de fora para o teste
- * poder fixar a data — sem isso o resultado mudaria a cada dia que passa.
+ * Dias entre hoje e a data de referência (fatura ou entrega).
  */
-export function diasAteEntrega(dtEntrega: string, hoje: Date): number | null {
-  if (!dtEntrega) return null;
-  const alvo = new Date(`${dtEntrega}T00:00:00`);
+export function diasAteEntrega(dataIso: string, hoje: Date): number | null {
+  if (!dataIso) return null;
+  const alvo = new Date(`${dataIso}T00:00:00`);
   if (Number.isNaN(alvo.getTime())) return null;
   const base = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
   return Math.round((alvo.getTime() - base.getTime()) / 86400000);
@@ -97,45 +127,178 @@ export function montarPrioridades(
   estoque: EstoqueDisponivel[],
   hoje: Date = new Date(),
 ): LinhaPrioridade[] {
-  // Saldo de estoque que ainda nao foi prometido a ninguem nesta fila.
+  // 1. Saldo de estoque inicial por SKU (721 e produto acabado 2020/2024)
   const disponivel = new Map<string, number>();
+  const estoqueInicialPorSku = new Map<string, number>();
   for (const e of estoque) {
     const k = chave(e.referencia, e.cor, e.tam);
-    disponivel.set(k, (disponivel.get(k) ?? 0) + Math.max(0, e.estoque));
+    const saldo = (disponivel.get(k) ?? 0) + Math.max(0, e.estoque);
+    disponivel.set(k, saldo);
+    estoqueInicialPorSku.set(k, saldo);
   }
 
-  const abertos = pedidos
-    .map((p) => ({ ...p, aberta: Math.max(0, p.qtdePedida - p.qtdeExpedida) }))
-    .filter((p) => p.aberta > 0);
+  // 2. Agrupar itens por pedido para simular PEDIDO A PEDIDO
+  const itensPorPedido = new Map<string, (PedidoAberto & { aberta: number })[]>();
+  const pedidosMeta = new Map<
+    string,
+    {
+      numero: string;
+      cliente: string;
+      dtFatura: string;
+      dtEntrega: string;
+      dtEmissao: string;
+      descStatus: string;
+      cidade: string;
+      estado: string;
+    }
+  >();
 
-  abertos.sort((a, b) => {
-    // Sem data vai para o fim; entre duas sem data, ordena por numero.
-    if (!a.dtEntrega && !b.dtEntrega) return a.numero.localeCompare(b.numero, "pt-BR", { numeric: true });
-    if (!a.dtEntrega) return 1;
-    if (!b.dtEntrega) return -1;
-    if (a.dtEntrega !== b.dtEntrega) return a.dtEntrega.localeCompare(b.dtEntrega);
+  for (const p of pedidos) {
+    const aberta = Math.max(0, (Number(p.qtdePedida) || 0) - (Number(p.qtdeExpedida) || 0));
+    if (aberta <= 0) continue;
+
+    const num = String(p.numero || "").trim();
+    if (!itensPorPedido.has(num)) {
+      itensPorPedido.set(num, []);
+      pedidosMeta.set(num, {
+        numero: num,
+        cliente: String(p.cliente || "").trim(),
+        dtFatura: String(p.dtFatura || p.dtEntrega || p.dtEmissao || "").trim(),
+        dtEntrega: String(p.dtEntrega || "").trim(),
+        dtEmissao: String(p.dtEmissao || "").trim(),
+        descStatus: String(p.descStatus || "").trim(),
+        cidade: String(p.cidade || "").trim(),
+        estado: String(p.estado || "").trim(),
+      });
+    }
+    itensPorPedido.get(num)!.push({
+      ...p,
+      aberta,
+    });
+  }
+
+  // 3. ORDENAR OS PEDIDOS POR DATA DE FATURA (dtFatura)
+  // Conforme solicitado: quem tem fatura primeiro é atendido antes pelo estoque
+  const pedidosOrdenados = Array.from(pedidosMeta.values()).sort((a, b) => {
+    if (!a.dtFatura && !b.dtFatura) return a.numero.localeCompare(b.numero, "pt-BR", { numeric: true });
+    if (!a.dtFatura) return 1;
+    if (!b.dtFatura) return -1;
+    if (a.dtFatura !== b.dtFatura) return a.dtFatura.localeCompare(b.dtFatura);
     return a.numero.localeCompare(b.numero, "pt-BR", { numeric: true });
   });
 
-  return abertos.map((p) => {
-    const k = chave(p.referencia, p.cor, p.tam);
-    const saldo = disponivel.get(k) ?? 0;
-    const coberto = Math.min(saldo, p.aberta);
-    disponivel.set(k, saldo - coberto);
-    const dias = diasAteEntrega(p.dtEntrega, hoje);
-    return {
-      numero: p.numero,
-      dtEntrega: p.dtEntrega,
-      dtEmissao: p.dtEmissao,
-      descStatus: p.descStatus,
-      referencia: p.referencia,
-      cor: p.cor,
-      tam: p.tam,
-      aberta: p.aberta,
-      cobertoPorEstoque: coberto,
-      faltaProduzir: p.aberta - coberto,
-      diasAteEntrega: dias,
-      atrasado: dias !== null && dias < 0,
-    };
+  // 4. Simulação sequencial com desconto cumulativo de estoque:
+  // Quando for simular o próximo pedido, o estoque já estará reduzido pelo atendimento anterior.
+  // Também rastreamos a primeira data de fatura em que cada produto acusou falta.
+  const primeiraFaltaPorSku = new Map<string, string>();
+  const linhasResultado: LinhaPrioridade[] = [];
+
+  for (const meta of pedidosOrdenados) {
+    const itens = itensPorPedido.get(meta.numero) || [];
+    let pedidoTemFalta = false;
+
+    const itensProcessados: {
+      item: PedidoAberto & { aberta: number };
+      coberto: number;
+      falta: number;
+      dias: number | null;
+      atrasado: boolean;
+    }[] = [];
+
+    for (const item of itens) {
+      const k = chave(item.referencia, item.cor, item.tam);
+      const saldo = disponivel.get(k) ?? 0;
+      const coberto = Math.min(saldo, item.aberta);
+      const falta = item.aberta - coberto;
+
+      // Abate imediatamente o estoque do item
+      disponivel.set(k, saldo - coberto);
+
+      if (falta > 0) {
+        pedidoTemFalta = true;
+        if (!primeiraFaltaPorSku.has(k)) {
+          primeiraFaltaPorSku.set(k, meta.dtFatura);
+        }
+      }
+
+      const dataBase = meta.dtFatura || meta.dtEntrega;
+      const dias = diasAteEntrega(dataBase, hoje);
+
+      itensProcessados.push({
+        item,
+        coberto,
+        falta,
+        dias,
+        atrasado: dias !== null && dias < 0,
+      });
+    }
+
+    const statusPedido: "PENDURADO" | "COBERTO" = pedidoTemFalta ? "PENDURADO" : "COBERTO";
+
+    for (const proc of itensProcessados) {
+      const k = chave(proc.item.referencia, proc.item.cor, proc.item.tam);
+      linhasResultado.push({
+        numero: meta.numero,
+        cliente: meta.cliente,
+        dtFatura: meta.dtFatura,
+        dtEntrega: meta.dtEntrega,
+        dtEmissao: meta.dtEmissao,
+        descStatus: meta.descStatus,
+        referencia: proc.item.referencia,
+        descricao: proc.item.descricao || "",
+        cor: proc.item.cor,
+        descCor: proc.item.descCor || "",
+        tam: proc.item.tam,
+        aberta: proc.item.aberta,
+        cobertoPorEstoque: proc.coberto,
+        faltaProduzir: proc.falta,
+        statusPedido,
+        statusLinha: proc.falta > 0 ? "PENDURADO" : "COBERTO",
+        dtFaturaPrimeiraFalta: primeiraFaltaPorSku.get(k),
+        diasAteEntrega: proc.dias,
+        atrasado: proc.atrasado,
+        cidade: meta.cidade,
+        estado: meta.estado,
+      });
+    }
+  }
+
+  return linhasResultado;
+}
+
+/**
+ * Calcula a lista consolidada de rupturas por produto e a data a partir da qual cada um falta.
+ */
+export function extrairRupturasProdutos(linhas: LinhaPrioridade[]): RupturaProduto[] {
+  const mapa = new Map<string, RupturaProduto>();
+
+  for (const l of linhas) {
+    if (l.faltaProduzir <= 0) continue;
+    const k = chave(l.referencia, l.cor, l.tam);
+    if (!mapa.has(k)) {
+      mapa.set(k, {
+        referencia: l.referencia,
+        descricao: l.descricao,
+        cor: l.cor,
+        descCor: l.descCor,
+        tam: l.tam,
+        dtFaturaPrimeiraFalta: l.dtFaturaPrimeiraFalta || l.dtFatura,
+        primeiroPedidoAfetado: l.numero,
+        clientePrimeiroAfetado: l.cliente,
+        estoqueInicial: 0,
+        faltaTotal: 0,
+        demandaTotal: 0,
+      });
+    }
+    const r = mapa.get(k)!;
+    r.faltaTotal += l.faltaProduzir;
+    r.demandaTotal += l.aberta;
+  }
+
+  return Array.from(mapa.values()).sort((a, b) => {
+    if (a.dtFaturaPrimeiraFalta !== b.dtFaturaPrimeiraFalta) {
+      return a.dtFaturaPrimeiraFalta.localeCompare(b.dtFaturaPrimeiraFalta);
+    }
+    return b.faltaTotal - a.faltaTotal;
   });
 }

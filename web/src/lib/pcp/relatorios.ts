@@ -859,16 +859,23 @@ export function lerConsumo(
 
 export interface Pedido {
   numero: string;
+  cliente?: string;
   status: string;
   descStatus: string;
   dtEmissao: string;
+  dtFatura?: string;
   dtEntrega: string;
+  saldo?: number;
+  cidade?: string;
+  estado?: string;
 }
 
 export interface ItemPedido {
   numero: string;
   referencia: string;
+  descricao?: string;
   cor: string;
+  descCor?: string;
   tam: string;
   qtdePedida: number;
   qtdeExpedida: number;
@@ -876,8 +883,23 @@ export interface ItemPedido {
 
 /** Datas do 2710 vem em "dd/mm/aaaa", nao no formato ISO do resto do sistema. */
 function dataBrParaIso(texto: string): string {
-  const m = texto.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+  if (!texto) return "";
+  const t = texto.trim();
+  const mBr = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (mBr) {
+    const dia = mBr[1].padStart(2, "0");
+    const mes = mBr[2].padStart(2, "0");
+    const ano = mBr[3];
+    return `${ano}-${mes}-${dia}`;
+  }
+  const mIso = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (mIso) {
+    const ano = mIso[1];
+    const mes = mIso[2].padStart(2, "0");
+    const dia = mIso[3].padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+  }
+  return "";
 }
 
 /**
@@ -891,10 +913,15 @@ function dataBrParaIso(texto: string): string {
 export function lerPedidos(bytes: ArrayBuffer | Uint8Array): { itens: Pedido[]; resumo: Resumo } {
   const csv = lerCsv(bytes);
   const iNumero = primeiroIndice(csv, ["NUMERO", "NÚMERO"]);
+  const iCliente = primeiroIndice(csv, ["NOME", "CLIENTE", "NOMCLI"]);
   const iStatus = csv.indice("STATUS");
   const iDescStatus = csv.indice("DESC_STATUS");
   const iDtEmissao = csv.indice("DT_EMISSAO");
+  const iDtFatura = primeiroIndice(csv, ["DT_FATURA", "DTFATURA", "FATURA"]);
   const iDtEntrega = csv.indice("DT_ENTREGA");
+  const iSaldo = csv.indice("SALDO");
+  const iCidade = csv.indice("CIDADE");
+  const iEstado = csv.indice("ESTADO");
 
   const itens: Pedido[] = [];
   for (const linha of csv.linhas) {
@@ -902,10 +929,15 @@ export function lerPedidos(bytes: ArrayBuffer | Uint8Array): { itens: Pedido[]; 
     if (!numeroPedido) continue;
     itens.push({
       numero: numeroPedido,
+      cliente: celula(linha, iCliente),
       status: celula(linha, iStatus),
       descStatus: celula(linha, iDescStatus),
       dtEmissao: dataBrParaIso(celula(linha, iDtEmissao)),
+      dtFatura: dataBrParaIso(celula(linha, iDtFatura)),
       dtEntrega: dataBrParaIso(celula(linha, iDtEntrega)),
+      saldo: numeroBr(celula(linha, iSaldo)),
+      cidade: celula(linha, iCidade),
+      estado: celula(linha, iEstado),
     });
   }
 
@@ -933,10 +965,12 @@ export function lerProdutosPedido(bytes: ArrayBuffer | Uint8Array): { itens: Ite
   const csv = lerCsv(bytes);
   const iNumero = primeiroIndice(csv, ["NÚMERO", "NUMERO"]);
   const iCodigo = primeiroIndice(csv, ["CÓDIGO", "CODIGO"]);
+  const iDescricao = csv.indice("DESCRICAO");
   const iCor = csv.indice("COR");
+  const iDescCor = primeiroIndice(csv, ["DESC_COR", "DESCCOR"]);
   const iTam = csv.indice("TAM");
-  const iQtdePed = primeiroIndice(csv, ["QTDE. PED.", "QTDE.PED."]);
-  const iQtdeExp = primeiroIndice(csv, ["QTDE. EXP.", "QTDE.EXP."]);
+  const iQtdePed = primeiroIndice(csv, ["QTDE. PED.", "QTDE.PED.", "QTDE_PED"]);
+  const iQtdeExp = primeiroIndice(csv, ["QTDE. EXP.", "QTDE.EXP.", "QTDE_EXP"]);
 
   const itens: ItemPedido[] = [];
   for (const linha of csv.linhas) {
@@ -946,7 +980,9 @@ export function lerProdutosPedido(bytes: ArrayBuffer | Uint8Array): { itens: Ite
     itens.push({
       numero: numeroPedido,
       referencia,
+      descricao: celula(linha, iDescricao),
       cor: celula(linha, iCor).toUpperCase(),
+      descCor: celula(linha, iDescCor),
       tam: celula(linha, iTam).toUpperCase(),
       qtdePedida: numeroBr(celula(linha, iQtdePed)),
       qtdeExpedida: numeroBr(celula(linha, iQtdeExp)),
