@@ -3,8 +3,8 @@ import { montarAcompanhamento } from "../../lib/pcp/ordens";
 import { buscarComCache } from "../../lib/pcp/buscar";
 import StatCard from "../../components/charts/StatCard";
 
-const ALTURA_LINHA = 28;
-const RESERVA = 10;
+const ALTURA_LINHA = 40;
+const RESERVA = 35;
 
 function inteiro(valor) {
   return Math.round(valor || 0).toLocaleString("pt-BR");
@@ -41,10 +41,8 @@ export default function PcpRetornoOrdensPage() {
 
   const wrapRef = useRef(null);
   const [scrollTop, setScrollTop] = useState(0);
-  const [alturaJanela, setAlturaJanela] = useState(500);
+  const [alturaJanela, setAlturaJanela] = useState(600);
   const pendenteRolagemRef = useRef(null);
-  const posicaoRolagemRef = useRef(0);
-  const ultimoAplicadoRef = useRef(0);
 
   const carregarDados = () => {
     setCarregando(true);
@@ -68,7 +66,7 @@ export default function PcpRetornoOrdensPage() {
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const medir = () => setAlturaJanela(el.clientHeight);
+    const medir = () => setAlturaJanela(el.clientHeight || 600);
     medir();
     const ro = new ResizeObserver(medir);
     ro.observe(el);
@@ -77,23 +75,11 @@ export default function PcpRetornoOrdensPage() {
 
   function aoRolar(e) {
     const pos = e.currentTarget.scrollTop;
-    posicaoRolagemRef.current = pos;
-    const agora = Date.now();
-    if (agora - ultimoAplicadoRef.current >= 16) {
-      ultimoAplicadoRef.current = agora;
-      if (pendenteRolagemRef.current !== null) {
-        clearTimeout(pendenteRolagemRef.current);
-        pendenteRolagemRef.current = null;
-      }
+    if (pendenteRolagemRef.current !== null) return;
+    pendenteRolagemRef.current = requestAnimationFrame(() => {
       setScrollTop(pos);
-      return;
-    }
-    if (pendenteRolagemRef.current !== null) clearTimeout(pendenteRolagemRef.current);
-    pendenteRolagemRef.current = setTimeout(() => {
-      ultimoAplicadoRef.current = Date.now();
-      setScrollTop(posicaoRolagemRef.current);
       pendenteRolagemRef.current = null;
-    }, 16);
+    });
   }
 
   const fila = useMemo(() => montarAcompanhamento(ordens, pedidos), [ordens, pedidos]);
@@ -186,7 +172,7 @@ export default function PcpRetornoOrdensPage() {
   }
 
   return (
-    <main className="workspace">
+    <main className="workspace" style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
       <header className="topbar no-print">
         <div className="sheet-header-inline">
           <p className="overline">PCP · Monitoramento de Facções</p>
@@ -207,23 +193,33 @@ export default function PcpRetornoOrdensPage() {
           >
             🔄
           </button>
-          <span className="status-pill">{inteiro(filtrada.length)} OPs</span>
+          <span className="status-pill">{inteiro(filtrada.length)} OPs exibidas</span>
         </div>
       </header>
 
-      <section className="content-panel">
+      <section
+        className="content-panel"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          margin: "14px 20px 16px",
+        }}
+      >
         {erro && (
-          <div className="faixa-aviso erro no-print" style={{ marginBottom: 16 }}>
+          <div className="faixa-aviso erro no-print" style={{ marginBottom: 14 }}>
             <span>{erro}</span>
           </div>
         )}
 
         {/* Estatísticas */}
         {!carregando && fila.length > 0 && (
-          <div className="dashboard-stats" style={{ marginBottom: 20 }}>
+          <div className="dashboard-stats" style={{ marginBottom: 14, flexWrap: "wrap", gap: 12 }}>
             <StatCard
               icon="🚨"
-              label="OPs críticas"
+              label="OPs com risco crítico"
               value={inteiro(resumo.criticas)}
               tone="danger"
             />
@@ -252,10 +248,10 @@ export default function PcpRetornoOrdensPage() {
         <div
           className="filter-panel"
           style={{
-            padding: "10px 16px",
-            marginBottom: 16,
+            padding: "8px 14px",
+            marginBottom: 12,
             display: "flex",
-            gap: 14,
+            gap: 12,
             alignItems: "center",
             flexWrap: "wrap",
             background: "var(--surface)",
@@ -263,8 +259,8 @@ export default function PcpRetornoOrdensPage() {
             borderRadius: "var(--radius)",
           }}
         >
-          <label style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 260 }}>
-            <span className="muted" style={{ fontSize: 13, fontWeight: 700 }}>Buscar:</span>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 240 }}>
+            <span className="muted" style={{ fontSize: 12, fontWeight: 700 }}>BUSCA:</span>
             <input
               value={busca}
               onChange={(e) => {
@@ -273,11 +269,12 @@ export default function PcpRetornoOrdensPage() {
                 if (wrapRef.current) wrapRef.current.scrollTop = 0;
               }}
               placeholder="OP, produto, cor ou facção..."
+              style={{ height: 32, padding: "4px 10px", fontSize: 13 }}
             />
           </label>
 
-          <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span className="muted" style={{ fontSize: 13, fontWeight: 700 }}>Risco:</span>
+          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="muted" style={{ fontSize: 12, fontWeight: 700 }}>RISCO:</span>
             <select
               value={filtroRisco}
               onChange={(e) => {
@@ -285,18 +282,18 @@ export default function PcpRetornoOrdensPage() {
                 setScrollTop(0);
                 if (wrapRef.current) wrapRef.current.scrollTop = 0;
               }}
-              style={{ width: "auto" }}
+              style={{ width: "auto", height: 32, padding: "2px 8px", fontSize: 12.5 }}
             >
               <option value="todos">Todos os riscos</option>
-              <option value="critico">Apenas críticos</option>
-              <option value="atencao">Apenas atenção</option>
-              <option value="normal">Apenas no prazo</option>
+              <option value="critico">🚨 Apenas críticos</option>
+              <option value="atencao">⚠️ Apenas atenção</option>
+              <option value="normal">✅ Apenas no prazo</option>
               <option value="sem-pedido">Apenas sem pedido</option>
             </select>
           </label>
 
-          <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span className="muted" style={{ fontSize: 13, fontWeight: 700 }}>Facção:</span>
+          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="muted" style={{ fontSize: 12, fontWeight: 700 }}>FACÇÃO:</span>
             <select
               value={filtroFaccao}
               onChange={(e) => {
@@ -304,9 +301,9 @@ export default function PcpRetornoOrdensPage() {
                 setScrollTop(0);
                 if (wrapRef.current) wrapRef.current.scrollTop = 0;
               }}
-              style={{ width: "auto" }}
+              style={{ width: "auto", height: 32, padding: "2px 8px", fontSize: 12.5 }}
             >
-              <option value="todas">Todas ({faccoes.length})</option>
+              <option value="todas">Todas as facções ({faccoes.length})</option>
               {faccoes.map((f) => (
                 <option key={f} value={f}>
                   {f}
@@ -316,88 +313,155 @@ export default function PcpRetornoOrdensPage() {
           </label>
         </div>
 
-        {/* Tabela com Scroll Responsivo e Windowing */}
+        {/* Tabela com Scroll Responsivo e Windowing Estável */}
         <div
           className="table-scroll"
           ref={wrapRef}
           onScroll={aoRolar}
-          style={{ maxHeight: "calc(100vh - 270px)", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflow: "auto",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--radius)",
+            background: "#fff",
+          }}
         >
           {carregando ? (
-            <div className="empty-state">Carregando ordens de produção pendentes...</div>
+            <div className="empty-state" style={{ padding: 48, textAlign: "center" }}>
+              Carregando ordens de produção pendentes...
+            </div>
           ) : filtrada.length === 0 ? (
-            <div className="empty-state" style={{ padding: 40, textAlign: "center" }}>
+            <div className="empty-state" style={{ padding: 48, textAlign: "center" }}>
               <strong>Nenhuma OP pendente encontrada.</strong>
-              <p className="muted" style={{ margin: "4px 0 0" }}>
+              <p className="muted" style={{ margin: "6px 0 0" }}>
                 {fila.length === 0
                   ? "Importe o relatório de ORDENS PENDENTES (3011) na tela Importar."
                   : "Nenhuma ordem corresponde aos filtros selecionados."}
               </p>
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <table
+              style={{
+                width: "100%",
+                minWidth: 1240,
+                borderCollapse: "collapse",
+                tableLayout: "fixed",
+                fontSize: 12.5,
+              }}
+            >
+              <colgroup>
+                <col style={{ width: 80 }} />
+                <col style={{ width: 105 }} />
+                <col style={{ width: 130 }} />
+                <col style={{ width: 85 }} />
+                <col style={{ width: 95 }} />
+                <col style={{ width: 160 }} />
+                <col style={{ width: 95 }} />
+                <col style={{ width: 105 }} />
+                <col style={{ width: 70 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 100 }} />
+                <col style={{ width: 115 }} />
+                <col style={{ width: 95 }} />
+              </colgroup>
               <thead>
-                <tr style={{ background: "var(--bg)", position: "sticky", top: 0, zIndex: 10 }}>
-                  <th style={{ width: 80 }}>OP</th>
-                  <th style={{ width: 100 }}>Referência</th>
-                  <th style={{ width: 140 }}>Cor</th>
-                  <th style={{ width: 90 }}>Grade</th>
-                  <th style={{ width: 90, textAlign: "right" }}>Pendente</th>
-                  <th style={{ minWidth: 160, overflowWrap: "break-word" }}>Facção</th>
-                  <th style={{ width: 95 }}>Saída</th>
-                  <th style={{ width: 105 }}>Retorno prev.</th>
-                  <th style={{ width: 80, textAlign: "right" }}>Dias</th>
-                  <th style={{ width: 110 }}>Pedido urg.</th>
-                  <th style={{ width: 100 }}>Entrega</th>
-                  <th style={{ width: 120 }}>Folga</th>
-                  <th style={{ width: 100, textAlign: "center" }}>Risco</th>
+                <tr
+                  style={{
+                    background: "var(--sheet-header-bg, #f1f5f9)",
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 10,
+                    height: 38,
+                    borderBottom: "2px solid var(--line)",
+                  }}
+                >
+                  <th style={{ textAlign: "left", padding: "0 8px" }}>OP</th>
+                  <th style={{ textAlign: "left", padding: "0 8px" }}>Referência</th>
+                  <th style={{ textAlign: "left", padding: "0 8px" }}>Cor</th>
+                  <th style={{ textAlign: "left", padding: "0 8px" }}>Grade</th>
+                  <th style={{ textAlign: "right", padding: "0 8px" }}>Pendente</th>
+                  <th style={{ textAlign: "left", padding: "0 8px" }}>Facção</th>
+                  <th style={{ textAlign: "left", padding: "0 8px" }}>Saída</th>
+                  <th style={{ textAlign: "left", padding: "0 8px" }}>Retorno prev.</th>
+                  <th style={{ textAlign: "right", padding: "0 8px" }}>Dias</th>
+                  <th style={{ textAlign: "left", padding: "0 8px" }}>Pedido urg.</th>
+                  <th style={{ textAlign: "left", padding: "0 8px" }}>Entrega</th>
+                  <th style={{ textAlign: "left", padding: "0 8px" }}>Folga</th>
+                  <th style={{ textAlign: "center", padding: "0 4px" }}>Risco</th>
                 </tr>
               </thead>
               <tbody>
                 {alturaAntes > 0 && (
-                  <tr aria-hidden="true">
-                    <td colSpan={13} style={{ height: alturaAntes, padding: 0, border: 0 }} />
+                  <tr aria-hidden="true" style={{ height: alturaAntes }}>
+                    <td colSpan={13} style={{ padding: 0, border: 0 }} />
                   </tr>
                 )}
                 {janela.map((o) => (
                   <tr
                     key={o.op}
-                    style={
-                      o.risco === "critico"
-                        ? { background: "var(--red-soft, #fee2e2)" }
-                        : o.atrasadoRetorno
-                          ? { background: "var(--amber-soft, #fef3c7)" }
-                          : undefined
-                    }
+                    style={{
+                      height: ALTURA_LINHA,
+                      borderBottom: "1px solid var(--line)",
+                      background:
+                        o.risco === "critico"
+                          ? "#fef2f2"
+                          : o.atrasadoRetorno
+                            ? "#fffbeb"
+                            : undefined,
+                    }}
                   >
-                    <td>
+                    <td style={{ padding: "0 8px", overflowWrap: "break-word", wordBreak: "break-word" }}>
                       <strong style={{ color: "var(--teal)" }}>{o.op}</strong>
                     </td>
-                    <td>
+                    <td style={{ padding: "0 8px", overflowWrap: "break-word", wordBreak: "break-word" }}>
                       <strong>{o.referencia}</strong>
                     </td>
-                    <td style={{ overflowWrap: "break-word" }}>{o.corNome || o.cor}</td>
-                    <td>{o.tamanhos}</td>
-                    <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 700 }}>
+                    <td style={{ padding: "0 8px", overflowWrap: "break-word", wordBreak: "break-word" }} title={o.corNome}>
+                      {o.corNome || o.cor}
+                    </td>
+                    <td style={{ padding: "0 8px", overflowWrap: "break-word", wordBreak: "break-word" }}>
+                      {o.tamanhos}
+                    </td>
+                    <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 700, padding: "0 8px" }}>
                       {inteiro(o.quantPendente)}
                     </td>
-                    <td style={{ overflowWrap: "break-word" }}>{o.faccao || "Sem facção"}</td>
-                    <td>{dataBr(o.dtSaida)}</td>
-                    <td>{dataBr(o.dtRetorno)}</td>
-                    <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{o.diasPendente}</td>
-                    <td>
+                    <td style={{ padding: "0 8px", overflowWrap: "break-word", wordBreak: "break-word" }} title={o.faccao}>
+                      {o.faccao || "Sem facção"}
+                    </td>
+                    <td style={{ padding: "0 8px", overflowWrap: "break-word", wordBreak: "break-word" }}>
+                      {dataBr(o.dtSaida)}
+                    </td>
+                    <td style={{ padding: "0 8px", overflowWrap: "break-word", wordBreak: "break-word" }}>
+                      {dataBr(o.dtRetorno)}
+                    </td>
+                    <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", padding: "0 8px" }}>
+                      {o.diasPendente}
+                    </td>
+                    <td style={{ padding: "0 8px", overflowWrap: "break-word", wordBreak: "break-word" }}>
                       {o.pedidoMaisUrgente ? <strong>{o.pedidoMaisUrgente}</strong> : <span className="muted">—</span>}
                     </td>
-                    <td>{dataBr(o.dtEntregaPedidoMaisUrgente)}</td>
-                    <td style={{ fontWeight: o.folgaDias !== null && o.folgaDias < 0 ? 700 : 400, color: o.folgaDias !== null && o.folgaDias < 0 ? "var(--danger)" : "inherit" }}>
+                    <td style={{ padding: "0 8px", overflowWrap: "break-word", wordBreak: "break-word" }}>
+                      {dataBr(o.dtEntregaPedidoMaisUrgente)}
+                    </td>
+                    <td
+                      style={{
+                        padding: "0 8px",
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                        lineHeight: 1.25,
+                        fontWeight: o.folgaDias !== null && o.folgaDias < 0 ? 700 : 400,
+                        color: o.folgaDias !== null && o.folgaDias < 0 ? "var(--danger)" : "inherit",
+                      }}
+                    >
                       {folgaRotulo(o)}
                     </td>
-                    <td style={{ textAlign: "center" }}>{badgeRisco(o.risco)}</td>
+                    <td style={{ textAlign: "center", padding: "0 4px" }}>{badgeRisco(o.risco)}</td>
                   </tr>
                 ))}
                 {alturaDepois > 0 && (
-                  <tr aria-hidden="true">
-                    <td colSpan={13} style={{ height: alturaDepois, padding: 0, border: 0 }} />
+                  <tr aria-hidden="true" style={{ height: alturaDepois }}>
+                    <td colSpan={13} style={{ padding: 0, border: 0 }} />
                   </tr>
                 )}
               </tbody>

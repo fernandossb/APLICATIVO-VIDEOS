@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { pcpDb } from "../../lib/pcp/pcpDb";
 import StatCard from "../../components/charts/StatCard";
 
-const ALTURA_LINHA = 28;
-const RESERVA = 10;
+const ALTURA_LINHA = 40;
+const RESERVA = 35;
 
 function inteiro(valor) {
   return Math.round(Number(valor) || 0).toLocaleString("pt-BR");
@@ -26,10 +26,8 @@ export default function ComprasEstoquePage() {
 
   const wrapRef = useRef(null);
   const [scrollTop, setScrollTop] = useState(0);
-  const [alturaJanela, setAlturaJanela] = useState(500);
+  const [alturaJanela, setAlturaJanela] = useState(600);
   const pendenteRolagemRef = useRef(null);
-  const posicaoRolagemRef = useRef(0);
-  const ultimoAplicadoRef = useRef(0);
 
   const carregar = async () => {
     try {
@@ -51,7 +49,7 @@ export default function ComprasEstoquePage() {
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const medir = () => setAlturaJanela(el.clientHeight || 500);
+    const medir = () => setAlturaJanela(el.clientHeight || 600);
     medir();
     const ro = new ResizeObserver(medir);
     ro.observe(el);
@@ -60,29 +58,17 @@ export default function ComprasEstoquePage() {
 
   useEffect(() => {
     return () => {
-      if (pendenteRolagemRef.current !== null) clearTimeout(pendenteRolagemRef.current);
+      if (pendenteRolagemRef.current !== null) cancelAnimationFrame(pendenteRolagemRef.current);
     };
   }, []);
 
   function aoRolar(e) {
     const pos = e.currentTarget.scrollTop;
-    posicaoRolagemRef.current = pos;
-    const agora = Date.now();
-    if (agora - ultimoAplicadoRef.current >= 16) {
-      ultimoAplicadoRef.current = agora;
-      if (pendenteRolagemRef.current !== null) {
-        clearTimeout(pendenteRolagemRef.current);
-        pendenteRolagemRef.current = null;
-      }
+    if (pendenteRolagemRef.current !== null) return;
+    pendenteRolagemRef.current = requestAnimationFrame(() => {
       setScrollTop(pos);
-      return;
-    }
-    if (pendenteRolagemRef.current !== null) clearTimeout(pendenteRolagemRef.current);
-    pendenteRolagemRef.current = setTimeout(() => {
-      ultimoAplicadoRef.current = Date.now();
-      setScrollTop(posicaoRolagemRef.current);
       pendenteRolagemRef.current = null;
-    }, 16);
+    });
   }
 
   const grupos = useMemo(() => {
@@ -171,7 +157,7 @@ export default function ComprasEstoquePage() {
   }
 
   return (
-    <main className="workspace">
+    <main className="workspace" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <header className="topbar">
         <div className="sheet-header-inline">
           <p className="overline">Compras · Gestão de Materiais</p>
@@ -207,9 +193,22 @@ export default function ComprasEstoquePage() {
         </div>
       )}
 
-      <section className="content-panel" style={{ margin: "16px 24px" }}>
+      <section
+        className="content-panel"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          padding: "16px 24px",
+          maxWidth: "100%",
+          width: "100%",
+          margin: 0,
+          overflow: "hidden",
+        }}
+      >
         {/* Indicadores Visuais */}
-        <div className="metric-strip" style={{ marginBottom: 20 }}>
+        <div className="metric-strip" style={{ marginBottom: 16 }}>
           <StatCard
             title="Itens no estoque"
             value={inteiro(stats.totalItens)}
@@ -244,10 +243,10 @@ export default function ComprasEstoquePage() {
             gap: 12,
             alignItems: "center",
             background: "var(--card-hover, rgba(0,0,0,0.02))",
-            padding: "12px 16px",
+            padding: "10px 16px",
             borderRadius: 8,
             border: "1px solid var(--line)",
-            marginBottom: 16,
+            marginBottom: 14,
           }}
         >
           <div style={{ flex: 1, minWidth: 240 }}>
@@ -260,7 +259,7 @@ export default function ComprasEstoquePage() {
                 setScrollTop(0);
                 if (wrapRef.current) wrapRef.current.scrollTop = 0;
               }}
-              style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid var(--line)" }}
+              style={{ width: "100%", padding: "7px 12px", borderRadius: 6, border: "1px solid var(--line)" }}
             />
           </div>
 
@@ -315,7 +314,7 @@ export default function ComprasEstoquePage() {
           className="table-scroll"
           ref={wrapRef}
           onScroll={aoRolar}
-          style={{ maxHeight: "calc(100vh - 360px)", overflow: "auto" }}
+          style={{ flex: 1, minHeight: 0, overflow: "auto" }}
         >
           {carregando ? (
             <div className="vazio-central" style={{ padding: 48, textAlign: "center" }}>
@@ -329,12 +328,31 @@ export default function ComprasEstoquePage() {
               </p>
             </div>
           ) : (
-            <table className="module-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table
+              className="module-table"
+              style={{
+                width: "100%",
+                minWidth: 1240,
+                tableLayout: "fixed",
+                borderCollapse: "collapse",
+              }}
+            >
+              <colgroup>
+                <col style={{ width: 110 }} />
+                <col style={{ width: 340 }} />
+                <col style={{ width: 190 }} />
+                <col style={{ width: 60 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 120 }} />
+                <col style={{ width: 150 }} />
+                <col style={{ width: 130 }} />
+              </colgroup>
               <thead>
                 <tr>
-                  <th style={{ width: 100, textAlign: "left", padding: "10px 12px" }}>Código</th>
-                  <th style={{ textAlign: "left", padding: "10px 12px" }}>Material / Descrição</th>
-                  <th style={{ width: 180, textAlign: "left", padding: "10px 12px" }}>Cor</th>
+                  <th style={{ width: 110, textAlign: "left", padding: "10px 12px" }}>Código</th>
+                  <th style={{ width: 340, textAlign: "left", padding: "10px 12px" }}>Material / Descrição</th>
+                  <th style={{ width: 190, textAlign: "left", padding: "10px 12px" }}>Cor</th>
                   <th style={{ width: 60, textAlign: "center", padding: "10px 8px" }}>Un.</th>
                   <th className="num" style={{ width: 110, textAlign: "right", padding: "10px 12px" }}>
                     Saldo Físico
@@ -345,7 +363,7 @@ export default function ComprasEstoquePage() {
                   <th className="num" style={{ width: 120, textAlign: "right", padding: "10px 12px" }}>
                     Disponível
                   </th>
-                  <th style={{ width: 160, textAlign: "left", padding: "10px 12px" }}>Grupo</th>
+                  <th style={{ width: 150, textAlign: "left", padding: "10px 12px" }}>Grupo</th>
                   <th style={{ width: 130, textAlign: "left", padding: "10px 12px" }}>Depósitos</th>
                 </tr>
               </thead>
@@ -360,24 +378,41 @@ export default function ComprasEstoquePage() {
                   return (
                     <tr
                       key={`${m.codigoMaterial}|${m.codigoCor}`}
-                      style={{ borderBottom: "1px solid var(--line)" }}
+                      style={{ height: ALTURA_LINHA, borderBottom: "1px solid var(--line)" }}
                     >
-                      <td style={{ padding: "6px 12px", fontFamily: "monospace", fontSize: 13 }}>
+                      <td
+                        style={{
+                          padding: "6px 12px",
+                          fontFamily: "monospace",
+                          fontSize: 13,
+                          overflowWrap: "break-word",
+                          wordBreak: "break-word",
+                        }}
+                      >
                         <strong>{m.codigoMaterial}</strong>
                       </td>
                       <td
                         style={{
                           padding: "6px 12px",
-                          maxWidth: 360,
                           overflowWrap: "break-word",
+                          wordBreak: "break-word",
                           whiteSpace: "normal",
-                          lineHeight: 1.35,
+                          lineHeight: 1.3,
                         }}
                         title={m.descricao}
                       >
                         {m.descricao}
                       </td>
-                      <td style={{ padding: "6px 12px", fontSize: 13 }} title={m.nomeCor}>
+                      <td
+                        style={{
+                          padding: "6px 12px",
+                          fontSize: 13,
+                          overflowWrap: "break-word",
+                          wordBreak: "break-word",
+                          whiteSpace: "normal",
+                        }}
+                        title={m.nomeCor}
+                      >
                         <span style={{ fontWeight: 600 }}>{m.codigoCor}</span>
                         {m.nomeCor ? ` — ${m.nomeCor}` : ""}
                       </td>
@@ -408,10 +443,28 @@ export default function ComprasEstoquePage() {
                       >
                         {decimal(disp)}
                       </td>
-                      <td style={{ padding: "6px 12px", fontSize: 13, color: "var(--muted)" }} title={m.descGrupo}>
+                      <td
+                        style={{
+                          padding: "6px 12px",
+                          fontSize: 13,
+                          color: "var(--muted)",
+                          overflowWrap: "break-word",
+                          wordBreak: "break-word",
+                        }}
+                        title={m.descGrupo}
+                      >
                         {m.descGrupo || "—"}
                       </td>
-                      <td style={{ padding: "6px 12px", fontSize: 12, color: "var(--muted)" }} title={m.depositos}>
+                      <td
+                        style={{
+                          padding: "6px 12px",
+                          fontSize: 12,
+                          color: "var(--muted)",
+                          overflowWrap: "break-word",
+                          wordBreak: "break-word",
+                        }}
+                        title={m.depositos}
+                      >
                         {m.linhasSomadas > 1 ? `${m.linhasSomadas} depósitos` : "1 depósito"}
                       </td>
                     </tr>

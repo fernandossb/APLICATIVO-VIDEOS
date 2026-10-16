@@ -347,12 +347,33 @@ export default function ProdutoDialog({
       role="dialog"
       aria-modal="true"
       aria-label={editando ? "Editar produto" : "Cadastrar produto"}
-      className="modal-backdrop"
+      className="modal"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 99999,
+        display: "grid",
+        placeItems: "center",
+        padding: "16px",
+        background: "rgba(13, 27, 29, 0.65)",
+        backdropFilter: "blur(4px)",
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) aoFechar();
       }}
     >
-      <div className="modal-card modal-card-wide product-card" style={{ maxWidth: 840 }}>
+      <div
+        className="modal-card modal-card-wide product-card"
+        style={{
+          maxWidth: 860,
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+          zIndex: 100000,
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
+        }}
+      >
         <header className="modal-header">
           <div>
             <h2>{editando ? `Editar produto ${form.referencia}/${form.cor}` : "Cadastrar produto"}</h2>

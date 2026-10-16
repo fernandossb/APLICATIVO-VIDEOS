@@ -97,7 +97,7 @@ export default function ComprasRelatoriosPage() {
   }
 
   return (
-    <main className="workspace">
+    <main className="workspace" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <header className="topbar">
         <div className="sheet-header-inline">
           <p className="overline">Compras & PCP · Auditoria de Dados</p>
@@ -133,7 +133,20 @@ export default function ComprasRelatoriosPage() {
         </div>
       )}
 
-      <section className="content-panel" style={{ margin: "16px 24px" }}>
+      <section
+        className="content-panel"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          padding: "16px 24px",
+          maxWidth: "100%",
+          width: "100%",
+          margin: 0,
+          overflow: "hidden",
+        }}
+      >
         {/* Indicadores */}
         <div className="metric-strip" style={{ marginBottom: 20 }}>
           <StatCard
@@ -188,7 +201,7 @@ export default function ComprasRelatoriosPage() {
         </div>
 
         {/* Tabela de Relatórios */}
-        <div className="table-scroll" style={{ maxHeight: "calc(100vh - 360px)", overflow: "auto" }}>
+        <div className="table-scroll" style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
           {carregando ? (
             <div className="vazio-central" style={{ padding: 48, textAlign: "center" }}>
               Carregando histórico de importações...
@@ -201,27 +214,51 @@ export default function ComprasRelatoriosPage() {
               </p>
             </div>
           ) : (
-            <table className="module-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table
+              className="module-table"
+              style={{
+                width: "100%",
+                minWidth: 1100,
+                tableLayout: "fixed",
+                borderCollapse: "collapse",
+              }}
+            >
+              <colgroup>
+                <col style={{ width: 180 }} />
+                <col style={{ width: 250 }} />
+                <col style={{ width: 120 }} />
+                <col style={{ width: 100 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 280 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 150 }} />
+              </colgroup>
               <thead>
                 <tr>
                   <th style={{ width: 180, textAlign: "left", padding: "10px 12px" }}>Tipo de Relatório</th>
-                  <th style={{ textAlign: "left", padding: "10px 12px" }}>Arquivo Importado</th>
+                  <th style={{ width: 250, textAlign: "left", padding: "10px 12px" }}>Arquivo Importado</th>
                   <th style={{ width: 120, textAlign: "center", padding: "10px 8px" }}>Data Arquivo</th>
-                  <th className="num" style={{ width: 110, textAlign: "right", padding: "10px 12px" }}>
+                  <th className="num" style={{ width: 100, textAlign: "right", padding: "10px 12px" }}>
                     Linhas Lidas
                   </th>
-                  <th className="num" style={{ width: 120, textAlign: "right", padding: "10px 12px" }}>
+                  <th className="num" style={{ width: 110, textAlign: "right", padding: "10px 12px" }}>
                     Aproveitadas
                   </th>
-                  <th style={{ textAlign: "left", padding: "10px 12px" }}>Avisos / Ocorrências</th>
-                  <th style={{ width: 120, textAlign: "left", padding: "10px 12px" }}>Usuário</th>
-                  <th style={{ width: 160, textAlign: "left", padding: "10px 12px" }}>Data / Hora</th>
+                  <th style={{ width: 280, textAlign: "left", padding: "10px 12px" }}>Avisos / Ocorrências</th>
+                  <th style={{ width: 110, textAlign: "left", padding: "10px 12px" }}>Usuário</th>
+                  <th style={{ width: 150, textAlign: "left", padding: "10px 12px" }}>Data / Hora</th>
                 </tr>
               </thead>
               <tbody>
                 {filtradas.map((imp, i) => (
                   <tr key={`${imp.tipo}|${imp.importadoEm}|${i}`} style={{ borderBottom: "1px solid var(--line)" }}>
-                    <td style={{ padding: "8px 12px" }}>
+                    <td
+                      style={{
+                        padding: "8px 12px",
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                      }}
+                    >
                       <strong>{imp.tipo}</strong>
                       {imp.variacao ? (
                         <span style={{ display: "block", fontSize: 11, color: "var(--muted)" }}>
@@ -232,8 +269,8 @@ export default function ComprasRelatoriosPage() {
                     <td
                       style={{
                         padding: "8px 12px",
-                        maxWidth: 260,
                         overflowWrap: "break-word",
+                        wordBreak: "break-word",
                         whiteSpace: "normal",
                         fontFamily: "monospace",
                         fontSize: 12,
@@ -266,8 +303,8 @@ export default function ComprasRelatoriosPage() {
                     <td
                       style={{
                         padding: "8px 12px",
-                        maxWidth: 320,
                         overflowWrap: "break-word",
+                        wordBreak: "break-word",
                         whiteSpace: "normal",
                         fontSize: 12,
                         color: imp.avisos ? "var(--amber, #f59e0b)" : "var(--muted)",
@@ -276,7 +313,9 @@ export default function ComprasRelatoriosPage() {
                     >
                       {imp.avisos || "—"}
                     </td>
-                    <td style={{ padding: "8px 12px", fontSize: 13 }}>{imp.usuario || "Sistema"}</td>
+                    <td style={{ padding: "8px 12px", fontSize: 13, overflowWrap: "break-word", wordBreak: "break-word" }}>
+                      {imp.usuario || "Sistema"}
+                    </td>
                     <td style={{ padding: "8px 12px", fontSize: 12, color: "var(--muted)" }}>
                       {dataHora(imp.importadoEm)}
                     </td>

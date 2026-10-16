@@ -121,7 +121,7 @@ export default function ComprasFaltaComprarPage() {
   }
 
   return (
-    <main className="workspace">
+    <main className="workspace" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <header className="topbar">
         <div className="sheet-header-inline">
           <p className="overline">Compras · Planejamento de Aquisições</p>
@@ -148,7 +148,20 @@ export default function ComprasFaltaComprarPage() {
         </div>
       </header>
 
-      <section className="content-panel" style={{ margin: "16px 24px" }}>
+      <section
+        className="content-panel"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          padding: "16px 24px",
+          maxWidth: "100%",
+          width: "100%",
+          margin: 0,
+          overflow: "hidden",
+        }}
+      >
         {/* Indicadores de Compras */}
         <div className="metric-strip" style={{ marginBottom: 20 }}>
           <StatCard
@@ -319,7 +332,7 @@ export default function ComprasFaltaComprarPage() {
         <div
           className="table-scroll"
           ref={wrapRef}
-          style={{ maxHeight: "calc(100vh - 360px)", overflow: "auto" }}
+          style={{ flex: 1, minHeight: 0, overflow: "auto" }}
         >
           {carregando ? (
             <div className="vazio-central" style={{ padding: 48, textAlign: "center" }}>
@@ -337,14 +350,33 @@ export default function ComprasFaltaComprarPage() {
               </p>
             </div>
           ) : (
-            <table className="module-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table
+              className="module-table"
+              style={{
+                width: "100%",
+                minWidth: 1100,
+                tableLayout: "fixed",
+                borderCollapse: "collapse",
+              }}
+            >
+              <colgroup>
+                <col style={{ width: 110 }} />
+                <col style={{ width: 330 }} />
+                <col style={{ width: 120 }} />
+                <col style={{ width: 130 }} />
+                <col style={{ width: 60 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 120 }} />
+                <col style={{ width: 90 }} />
+              </colgroup>
               <thead>
                 <tr>
-                  <th style={{ width: 104, textAlign: "left", padding: "10px 12px" }}>Material</th>
-                  <th style={{ textAlign: "left", padding: "10px 12px" }}>Descrição</th>
-                  <th style={{ width: 100, textAlign: "left", padding: "10px 12px" }}>Grupo</th>
-                  <th style={{ width: 120, textAlign: "left", padding: "10px 12px" }}>Cor</th>
-                  <th style={{ width: 56, textAlign: "center", padding: "10px 8px" }}>Un.</th>
+                  <th style={{ width: 110, textAlign: "left", padding: "10px 12px" }}>Material</th>
+                  <th style={{ width: 330, textAlign: "left", padding: "10px 12px" }}>Descrição</th>
+                  <th style={{ width: 120, textAlign: "left", padding: "10px 12px" }}>Grupo</th>
+                  <th style={{ width: 130, textAlign: "left", padding: "10px 12px" }}>Cor</th>
+                  <th style={{ width: 60, textAlign: "center", padding: "10px 8px" }}>Un.</th>
                   <th className="num" style={{ width: 110, textAlign: "right", padding: "10px 12px" }}>
                     Necessário
                   </th>
@@ -354,7 +386,7 @@ export default function ComprasFaltaComprarPage() {
                   <th className="num" style={{ width: 120, textAlign: "right", padding: "10px 12px" }}>
                     Falta Comprar
                   </th>
-                  <th className="num" style={{ width: 84, textAlign: "right", padding: "10px 12px" }}>
+                  <th className="num" style={{ width: 90, textAlign: "right", padding: "10px 12px" }}>
                     Produtos
                   </th>
                 </tr>
@@ -366,23 +398,50 @@ export default function ComprasFaltaComprarPage() {
                     className={m.semCadastro ? "inactive-row" : undefined}
                     style={{ borderBottom: "1px solid var(--line)" }}
                   >
-                    <td style={{ padding: "6px 12px", fontFamily: "monospace", fontSize: 13 }}>
+                    <td
+                      style={{
+                        padding: "6px 12px",
+                        fontFamily: "monospace",
+                        fontSize: 13,
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                      }}
+                    >
                       <strong>{m.codigo}</strong>
                     </td>
                     <td
                       style={{
                         padding: "6px 12px",
-                        maxWidth: 340,
                         overflowWrap: "break-word",
+                        wordBreak: "break-word",
                         whiteSpace: "normal",
-                        lineHeight: 1.35,
+                        lineHeight: 1.3,
                       }}
                       title={m.descricao}
                     >
                       {m.descricao}
                     </td>
-                    <td style={{ padding: "6px 12px", fontSize: 13, color: "var(--muted)" }}>{m.grupo}</td>
-                    <td style={{ padding: "6px 12px", fontSize: 13 }} title={m.corMaterialNome || m.corMaterial}>
+                    <td
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: 13,
+                        color: "var(--muted)",
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {m.grupo}
+                    </td>
+                    <td
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: 13,
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                        whiteSpace: "normal",
+                      }}
+                      title={m.corMaterialNome || m.corMaterial}
+                    >
                       {m.corMaterial || "sem cor"}
                     </td>
                     <td style={{ padding: "6px 8px", textAlign: "center", fontSize: 12, color: "var(--muted)" }}>

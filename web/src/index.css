@@ -64,12 +64,17 @@ textarea {
 /* app shell */
 .app-shell {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
 }
 
 .nav-rail {
   display: flex;
   width: 220px;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
   flex: none;
   flex-direction: column;
   gap: 4px;
@@ -148,7 +153,11 @@ textarea {
 .app-body {
   display: flex;
   flex: 1;
+  min-width: 0;
   min-height: 0;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
 }
 
 /* botao fixo pra mostrar/ocultar os paineis laterais (menu + lista da pagina) */
@@ -349,6 +358,9 @@ textarea {
 .sidebar {
   display: flex;
   width: 280px;
+  height: 100%;
+  max-height: 100vh;
+  overflow-y: auto;
   flex: none;
   flex-direction: column;
   gap: 14px;
@@ -544,8 +556,14 @@ textarea {
 
 /* workspace / topbar */
 .workspace {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100vh;
+  overflow: hidden;
 }
 
 .topbar {
@@ -2000,16 +2018,18 @@ tr.code-missing .from-catalog {
 .modal {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: 99999;
   display: grid;
   place-items: center;
   padding: 24px;
+  backdrop-filter: blur(4px);
 }
 
 .modal-backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  background: rgba(13, 27, 29, 0.46);
+  z-index: 99998;
+  background: rgba(13, 27, 29, 0.65);
 }
 
 .modal-card {
@@ -2775,11 +2795,12 @@ tr.code-missing .from-catalog {
 .fundo-modal {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 99999;
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(16, 24, 32, 0.45);
+  background: rgba(16, 24, 32, 0.65);
+  backdrop-filter: blur(4px);
   overflow-y: auto;
 }
 

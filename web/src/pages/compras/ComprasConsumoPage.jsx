@@ -3,8 +3,8 @@ import { pcpDb } from "../../lib/pcp/pcpDb";
 import { compararTamanho } from "../../lib/pcp/tamanhos";
 import StatCard from "../../components/charts/StatCard";
 
-const ALTURA_LINHA = 28;
-const RESERVA = 10;
+const ALTURA_LINHA = 40;
+const RESERVA = 35;
 
 const CONSUMO_SEM_FILTRO = {
   produto: "",
@@ -63,10 +63,8 @@ export default function ComprasConsumoPage() {
 
   const wrapRef = useRef(null);
   const [scrollTop, setScrollTop] = useState(0);
-  const [alturaJanela, setAlturaJanela] = useState(500);
+  const [alturaJanela, setAlturaJanela] = useState(600);
   const pendenteRolagemRef = useRef(null);
-  const posicaoRolagemRef = useRef(0);
-  const ultimoAplicadoRef = useRef(0);
 
   const carregar = async () => {
     try {
@@ -88,7 +86,7 @@ export default function ComprasConsumoPage() {
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const medir = () => setAlturaJanela(el.clientHeight || 500);
+    const medir = () => setAlturaJanela(el.clientHeight || 600);
     medir();
     const ro = new ResizeObserver(medir);
     ro.observe(el);
@@ -97,29 +95,17 @@ export default function ComprasConsumoPage() {
 
   useEffect(() => {
     return () => {
-      if (pendenteRolagemRef.current !== null) clearTimeout(pendenteRolagemRef.current);
+      if (pendenteRolagemRef.current !== null) cancelAnimationFrame(pendenteRolagemRef.current);
     };
   }, []);
 
   function aoRolar(e) {
     const pos = e.currentTarget.scrollTop;
-    posicaoRolagemRef.current = pos;
-    const agora = Date.now();
-    if (agora - ultimoAplicadoRef.current >= 16) {
-      ultimoAplicadoRef.current = agora;
-      if (pendenteRolagemRef.current !== null) {
-        clearTimeout(pendenteRolagemRef.current);
-        pendenteRolagemRef.current = null;
-      }
+    if (pendenteRolagemRef.current !== null) return;
+    pendenteRolagemRef.current = requestAnimationFrame(() => {
       setScrollTop(pos);
-      return;
-    }
-    if (pendenteRolagemRef.current !== null) clearTimeout(pendenteRolagemRef.current);
-    pendenteRolagemRef.current = setTimeout(() => {
-      ultimoAplicadoRef.current = Date.now();
-      setScrollTop(posicaoRolagemRef.current);
       pendenteRolagemRef.current = null;
-    }, 16);
+    });
   }
 
   function mudarFiltro(campo, valor) {
@@ -225,7 +211,7 @@ export default function ComprasConsumoPage() {
   }
 
   return (
-    <main className="workspace">
+    <main className="workspace" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <header className="topbar">
         <div className="sheet-header-inline">
           <p className="overline">Compras · Estrutura Técnica</p>
@@ -261,7 +247,20 @@ export default function ComprasConsumoPage() {
         </div>
       )}
 
-      <section className="content-panel" style={{ margin: "16px 24px" }}>
+      <section
+        className="content-panel"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          padding: "16px 24px",
+          maxWidth: "100%",
+          width: "100%",
+          margin: 0,
+          overflow: "hidden",
+        }}
+      >
         {/* Indicadores */}
         <div className="metric-strip" style={{ marginBottom: 20 }}>
           <StatCard
@@ -435,7 +434,7 @@ export default function ComprasConsumoPage() {
           className="table-scroll"
           ref={wrapRef}
           onScroll={aoRolar}
-          style={{ maxHeight: "calc(100vh - 390px)", overflow: "auto" }}
+          style={{ flex: 1, minHeight: 0, overflow: "auto" }}
         >
           {carregando ? (
             <div className="vazio-central" style={{ padding: 48, textAlign: "center" }}>
@@ -449,20 +448,39 @@ export default function ComprasConsumoPage() {
               </p>
             </div>
           ) : (
-            <table className="module-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table
+              className="module-table"
+              style={{
+                width: "100%",
+                minWidth: 1200,
+                tableLayout: "fixed",
+                borderCollapse: "collapse",
+              }}
+            >
+              <colgroup>
+                <col style={{ width: 100 }} />
+                <col style={{ width: 100 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 330 }} />
+                <col style={{ width: 150 }} />
+                <col style={{ width: 120 }} />
+                <col style={{ width: 65 }} />
+                <col style={{ width: 75 }} />
+                <col style={{ width: 150 }} />
+              </colgroup>
               <thead>
                 <tr>
-                  <th style={{ width: 90, textAlign: "left", padding: "10px 12px" }}>Produto</th>
-                  <th style={{ width: 90, textAlign: "left", padding: "10px 12px" }}>Cor Prod.</th>
-                  <th style={{ width: 100, textAlign: "left", padding: "10px 12px" }}>Material</th>
-                  <th style={{ textAlign: "left", padding: "10px 12px" }}>Descrição do Material</th>
-                  <th style={{ width: 140, textAlign: "left", padding: "10px 12px" }}>Cor Insumo</th>
-                  <th className="num" style={{ width: 110, textAlign: "right", padding: "10px 12px" }}>
+                  <th style={{ width: 100, textAlign: "left", padding: "10px 12px" }}>Produto</th>
+                  <th style={{ width: 100, textAlign: "left", padding: "10px 12px" }}>Cor Prod.</th>
+                  <th style={{ width: 110, textAlign: "left", padding: "10px 12px" }}>Material</th>
+                  <th style={{ width: 330, textAlign: "left", padding: "10px 12px" }}>Descrição do Material</th>
+                  <th style={{ width: 150, textAlign: "left", padding: "10px 12px" }}>Cor Insumo</th>
+                  <th className="num" style={{ width: 120, textAlign: "right", padding: "10px 12px" }}>
                     Consumo Unit.
                   </th>
-                  <th style={{ width: 60, textAlign: "center", padding: "10px 8px" }}>Un.</th>
-                  <th style={{ width: 70, textAlign: "center", padding: "10px 8px" }}>Faixa</th>
-                  <th style={{ width: 160, textAlign: "left", padding: "10px 12px" }}>Aplicação</th>
+                  <th style={{ width: 65, textAlign: "center", padding: "10px 8px" }}>Un.</th>
+                  <th style={{ width: 75, textAlign: "center", padding: "10px 8px" }}>Faixa</th>
+                  <th style={{ width: 150, textAlign: "left", padding: "10px 12px" }}>Aplicação</th>
                 </tr>
               </thead>
               <tbody>
@@ -474,26 +492,63 @@ export default function ComprasConsumoPage() {
                 {janela.map((c, i) => (
                   <tr
                     key={`${c.produto}|${c.corProduto}|${c.codigo}|${c.faixa}|${i}`}
-                    style={{ borderBottom: "1px solid var(--line)" }}
+                    style={{ height: ALTURA_LINHA, borderBottom: "1px solid var(--line)" }}
                   >
-                    <td style={{ padding: "6px 12px", fontFamily: "monospace", fontSize: 13 }}>
-                      <strong>{c.produto}</strong>
-                    </td>
-                    <td style={{ padding: "6px 12px", fontSize: 13 }}>{c.corProduto}</td>
-                    <td style={{ padding: "6px 12px", fontFamily: "monospace", fontSize: 13 }}>{c.codigo}</td>
                     <td
                       style={{
                         padding: "6px 12px",
-                        maxWidth: 340,
+                        fontFamily: "monospace",
+                        fontSize: 13,
                         overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      <strong>{c.produto}</strong>
+                    </td>
+                    <td
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: 13,
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
                         whiteSpace: "normal",
-                        lineHeight: 1.35,
+                      }}
+                    >
+                      {c.corProduto}
+                    </td>
+                    <td
+                      style={{
+                        padding: "6px 12px",
+                        fontFamily: "monospace",
+                        fontSize: 13,
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {c.codigo}
+                    </td>
+                    <td
+                      style={{
+                        padding: "6px 12px",
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                        whiteSpace: "normal",
+                        lineHeight: 1.3,
                       }}
                       title={c.descricao}
                     >
                       {c.descricao}
                     </td>
-                    <td style={{ padding: "6px 12px", fontSize: 13 }} title={c.corMaterialNome}>
+                    <td
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: 13,
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                        whiteSpace: "normal",
+                      }}
+                      title={c.corMaterialNome}
+                    >
                       {c.corMaterial || "sem cor"}
                     </td>
                     <td
@@ -508,7 +563,16 @@ export default function ComprasConsumoPage() {
                     <td style={{ padding: "6px 8px", textAlign: "center", fontSize: 12, fontWeight: 600 }}>
                       {c.faixa}
                     </td>
-                    <td style={{ padding: "6px 12px", fontSize: 12, color: "var(--muted)" }} title={c.aplicacao}>
+                    <td
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: 12,
+                        color: "var(--muted)",
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                      }}
+                      title={c.aplicacao}
+                    >
                       {c.aplicacao || "—"}
                     </td>
                   </tr>

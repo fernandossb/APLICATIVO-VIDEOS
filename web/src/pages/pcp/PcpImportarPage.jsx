@@ -375,7 +375,7 @@ export default function PcpImportarPage() {
   }, [grupos, analisar, enviar]);
 
   return (
-    <main className="workspace">
+    <main className="workspace" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <header className="topbar">
         <div className="sheet-header-inline">
           <p className="overline">Planejamento e Controle de Produção</p>
@@ -457,7 +457,20 @@ export default function PcpImportarPage() {
         </div>
       )}
 
-      <section className="content-panel" style={{ margin: "16px 24px" }}>
+      <section
+        className="content-panel"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          padding: "16px 24px",
+          maxWidth: "100%",
+          width: "100%",
+          margin: 0,
+          overflowY: "auto",
+        }}
+      >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16, marginBottom: 24 }}>
           <div className="chart-card" style={{ padding: 18 }}>
             <h3 style={{ margin: "0 0 12px", fontSize: 15 }}>💾 O que já está no banco local</h3>

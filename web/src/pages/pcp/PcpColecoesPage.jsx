@@ -122,7 +122,7 @@ export default function PcpColecoesPage() {
   }, [linhas]);
 
   return (
-    <main className="workspace">
+    <main className="workspace" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <header className="topbar">
         <div className="sheet-header-inline">
           <p className="overline">Planejamento e Controle de Produção</p>
@@ -158,7 +158,20 @@ export default function PcpColecoesPage() {
         </div>
       )}
 
-      <section className="content-panel" style={{ margin: "16px 24px" }}>
+      <section
+        className="content-panel"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          padding: "16px 24px",
+          maxWidth: "100%",
+          width: "100%",
+          margin: 0,
+          overflow: "hidden",
+        }}
+      >
         <div className="module-head" style={{ marginBottom: 16 }}>
           <div>
             <h2 style={{ fontSize: 18, margin: "0 0 6px" }}>Datas de Lançamento por Coleção</h2>
@@ -218,7 +231,7 @@ export default function PcpColecoesPage() {
           </div>
         )}
 
-        <div className="table-scroll">
+        <div className="table-scroll" style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
           {carregando ? (
             <div className="vazio-central" style={{ padding: 48, textAlign: "center" }}>
               Carregando coleções...
@@ -231,17 +244,33 @@ export default function PcpColecoesPage() {
               </p>
             </div>
           ) : (
-            <table className="module-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table
+              className="module-table"
+              style={{
+                width: "100%",
+                minWidth: 960,
+                tableLayout: "fixed",
+                borderCollapse: "collapse",
+              }}
+            >
+              <colgroup>
+                <col style={{ width: 260 }} />
+                <col style={{ width: 110 }} />
+                <col style={{ width: 230 }} />
+                <col style={{ width: 170 }} />
+                <col style={{ width: 120 }} />
+                <col style={{ width: 160 }} />
+              </colgroup>
               <thead>
                 <tr>
-                  <th style={{ textAlign: "left", padding: "10px 12px" }}>Coleção</th>
+                  <th style={{ width: 260, textAlign: "left", padding: "10px 12px" }}>Coleção</th>
                   <th className="num" style={{ width: 110, textAlign: "right", padding: "10px 12px" }}>
                     Produtos
                   </th>
-                  <th style={{ width: 220, textAlign: "left", padding: "10px 12px" }}>Arquivo 721</th>
-                  <th style={{ width: 180, textAlign: "left", padding: "10px 12px" }}>Lançamento</th>
-                  <th style={{ width: 130, textAlign: "left", padding: "10px 12px" }}>Origem</th>
-                  <th style={{ textAlign: "left", padding: "10px 12px" }}>Quem definiu</th>
+                  <th style={{ width: 230, textAlign: "left", padding: "10px 12px" }}>Arquivo 721</th>
+                  <th style={{ width: 170, textAlign: "left", padding: "10px 12px" }}>Lançamento</th>
+                  <th style={{ width: 120, textAlign: "left", padding: "10px 12px" }}>Origem</th>
+                  <th style={{ width: 160, textAlign: "left", padding: "10px 12px" }}>Quem definiu</th>
                 </tr>
               </thead>
               <tbody>
@@ -251,7 +280,15 @@ export default function PcpColecoesPage() {
                     className={!l.lancamento ? "inactive-row" : undefined}
                     style={{ borderBottom: "1px solid var(--line)" }}
                   >
-                    <td style={{ padding: "8px 12px" }} title={l.nome}>
+                    <td
+                      style={{
+                        padding: "8px 12px",
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                        whiteSpace: "normal",
+                      }}
+                      title={l.nome}
+                    >
                       <strong>{l.nome}</strong>
                     </td>
                     <td className="num" style={{ padding: "8px 12px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
@@ -260,7 +297,7 @@ export default function PcpColecoesPage() {
                     <td style={{ padding: "8px 12px" }}>
                       <select
                         className="lote-input"
-                        style={{ width: "100%", maxWidth: 200, textAlign: "left", padding: "4px 8px" }}
+                        style={{ width: "100%", maxWidth: 210, textAlign: "left", padding: "4px 8px" }}
                         value={l.arquivo || ""}
                         disabled={!podeEditar || salvando === l.nome}
                         onChange={(e) => {
@@ -288,7 +325,7 @@ export default function PcpColecoesPage() {
                       <input
                         type="date"
                         className="lote-input"
-                        style={{ width: "100%", maxWidth: 160, textAlign: "center", padding: "4px 8px" }}
+                        style={{ width: "100%", maxWidth: 150, textAlign: "center", padding: "4px 8px" }}
                         value={l.lancamento || ""}
                         disabled={!podeEditar || salvando === l.nome}
                         onChange={(e) =>
@@ -304,7 +341,16 @@ export default function PcpColecoesPage() {
                     <td style={{ padding: "8px 12px", fontSize: 13, color: "var(--muted)" }}>
                       {l.origem === "manual" ? "Digitada" : l.origem === "importacao" ? "Do arquivo" : "—"}
                     </td>
-                    <td style={{ padding: "8px 12px", fontSize: 13, color: "var(--muted)" }} title={l.atualizadoPor}>
+                    <td
+                      style={{
+                        padding: "8px 12px",
+                        fontSize: 13,
+                        color: "var(--muted)",
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                      }}
+                      title={l.atualizadoPor}
+                    >
                       {l.atualizadoPor || "—"}
                     </td>
                   </tr>

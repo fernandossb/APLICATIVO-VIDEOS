@@ -356,39 +356,64 @@ export const pcpDb = {
    * Obtém dados para a fila de prioridades (pedidos x estoque).
    */
   async obterPrioridades() {
-    const [pedidos, pedidosItens, programacao] = await Promise.all([
+    const [pedidos, pedidosItens, programacao, produtos] = await Promise.all([
       getAllFromStore<any>("pedidos"),
       getAllFromStore<any>("pedidos_itens"),
       getAllFromStore<any>("programacao"),
+      getAllFromStore<any>("produtos"),
     ]);
 
-    const pedidosMap = new Map<string, any>(pedidos.map((p: any) => [String(p.numero), p]));
+    const normalizarNum = (num: any) => String(num ?? "").trim().toUpperCase();
+    const pedidosMap = new Map<string, any>();
+    for (const p of pedidos) {
+      const chaveExata = normalizarNum(p.numero);
+      pedidosMap.set(chaveExata, p);
+      const chaveSemZeros = chaveExata.replace(/^0+/, "");
+      if (chaveSemZeros && !pedidosMap.has(chaveSemZeros)) {
+        pedidosMap.set(chaveSemZeros, p);
+      }
+    }
 
     const pedidosCombinados = pedidosItens
       .filter((pi: any) => (Number(pi.qtdePedida) || 0) > (Number(pi.qtdeExpedida) || 0))
       .map((pi: any) => {
-        const p = pedidosMap.get(String(pi.numero)) || {};
+        const numNorm = normalizarNum(pi.numero);
+        const p = pedidosMap.get(numNorm) || pedidosMap.get(numNorm.replace(/^0+/, "")) || {};
         return {
-          numero: pi.numero,
-          referencia: pi.referencia,
-          cor: pi.cor,
-          tam: pi.tam,
+          numero: String(pi.numero || "").trim(),
+          referencia: String(pi.referencia || "").trim().toUpperCase(),
+          cor: String(pi.cor || "").trim().toUpperCase(),
+          tam: String(pi.tam || "").trim().toUpperCase(),
           qtdePedida: Number(pi.qtdePedida) || 0,
           qtdeExpedida: Number(pi.qtdeExpedida) || 0,
           dtEntrega: p.dtEntrega || "",
           dtEmissao: p.dtEmissao || "",
-          descStatus: p.descStatus || "",
+          descStatus: p.descStatus || p.status || "",
         };
       });
 
-    const estoque = programacao
-      .filter((l: any) => (Number(l.estoque) || 0) > 0)
-      .map((l: any) => ({
-        referencia: l.referencia,
-        cor: l.cor,
-        tam: l.tam,
-        estoque: Number(l.estoque) || 0,
-      }));
+    // Saldo unificado de estoque: considera 721 (programacao) e 2024 (produtos acabados)
+    const estoqueMap = new Map<string, number>();
+    for (const l of programacao) {
+      const qtd = Number(l.estoque) || 0;
+      if (qtd > 0) {
+        const k = `${String(l.referencia).trim().toUpperCase()}|${String(l.cor).trim().toUpperCase()}|${String(l.tam).trim().toUpperCase()}`;
+        estoqueMap.set(k, qtd);
+      }
+    }
+    for (const prod of produtos) {
+      const qtd = Number(prod.quantidade) || 0;
+      if (qtd > 0) {
+        const k = `${String(prod.referencia).trim().toUpperCase()}|${String(prod.cor).trim().toUpperCase()}|${String(prod.tam).trim().toUpperCase()}`;
+        const atual = estoqueMap.get(k) || 0;
+        estoqueMap.set(k, Math.max(atual, qtd));
+      }
+    }
+
+    const estoque = Array.from(estoqueMap.entries()).map(([k, saldo]) => {
+      const [referencia, cor, tam] = k.split("|");
+      return { referencia, cor, tam, estoque: saldo };
+    });
 
     return {
       ok: true,
@@ -407,17 +432,27 @@ export const pcpDb = {
       getAllFromStore<any>("pedidos_itens"),
     ]);
 
-    const pedidosMap = new Map<string, any>(pedidos.map((p: any) => [String(p.numero), p]));
+    const normalizarNum = (num: any) => String(num ?? "").trim().toUpperCase();
+    const pedidosMap = new Map<string, any>();
+    for (const p of pedidos) {
+      const chaveExata = normalizarNum(p.numero);
+      pedidosMap.set(chaveExata, p);
+      const chaveSemZeros = chaveExata.replace(/^0+/, "");
+      if (chaveSemZeros && !pedidosMap.has(chaveSemZeros)) {
+        pedidosMap.set(chaveSemZeros, p);
+      }
+    }
 
     const pedidosPendentes = pedidosItens
       .filter((pi: any) => (Number(pi.qtdePedida) || 0) > (Number(pi.qtdeExpedida) || 0))
       .map((pi: any) => {
-        const p = pedidosMap.get(String(pi.numero)) || {};
+        const numNorm = normalizarNum(pi.numero);
+        const p = pedidosMap.get(numNorm) || pedidosMap.get(numNorm.replace(/^0+/, "")) || {};
         return {
-          numero: pi.numero,
-          referencia: pi.referencia,
-          cor: pi.cor,
-          tam: pi.tam,
+          numero: String(pi.numero || "").trim(),
+          referencia: String(pi.referencia || "").trim().toUpperCase(),
+          cor: String(pi.cor || "").trim().toUpperCase(),
+          tam: String(pi.tam || "").trim().toUpperCase(),
           qtdePedida: Number(pi.qtdePedida) || 0,
           qtdeExpedida: Number(pi.qtdeExpedida) || 0,
           dtEntrega: p.dtEntrega || "",
@@ -623,6 +658,7 @@ export const pcpDb = {
         if (aoProgredir && i % 100 === 0) aoProgredir(i, itens.length);
       }
     } else if (dados.tipo === "ESTOQUE_MATERIAL") {
+      await clearStore("estoque_materiais");
       const tx = db.transaction("estoque_materiais", "readwrite");
       const store = tx.objectStore("estoque_materiais");
 
@@ -634,6 +670,7 @@ export const pcpDb = {
         if (aoProgredir && i % 100 === 0) aoProgredir(i, itens.length);
       }
     } else if (dados.tipo === "ESTOQUE_PRODUTO") {
+      await clearStore("produtos");
       const tx = db.transaction(["produtos", "colecoes"], "readwrite");
       const prodStore = tx.objectStore("produtos");
       const colStore = tx.objectStore("colecoes");
@@ -715,6 +752,7 @@ export const pcpDb = {
         if (aoProgredir && i % 100 === 0) aoProgredir(i, itens.length);
       }
     } else if (dados.tipo === "PEDIDOS") {
+      await clearStore("pedidos");
       const tx = db.transaction("pedidos", "readwrite");
       const store = tx.objectStore("pedidos");
 
@@ -725,6 +763,7 @@ export const pcpDb = {
         if (aoProgredir && i % 100 === 0) aoProgredir(i, itens.length);
       }
     } else if (dados.tipo === "PRODUTOS_PEDIDO") {
+      await clearStore("pedidos_itens");
       const tx = db.transaction("pedidos_itens", "readwrite");
       const store = tx.objectStore("pedidos_itens");
 
@@ -736,6 +775,7 @@ export const pcpDb = {
         if (aoProgredir && i % 100 === 0) aoProgredir(i, itens.length);
       }
     } else if (dados.tipo === "ORDENS_PENDENTES") {
+      await clearStore("ordens_pendentes");
       const tx = db.transaction("ordens_pendentes", "readwrite");
       const store = tx.objectStore("ordens_pendentes");
 

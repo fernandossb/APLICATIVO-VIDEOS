@@ -6,7 +6,7 @@ import FiltroColuna from "../../components/pcp/FiltroColuna";
 import ProdutoDialog from "../../components/pcp/ProdutoDialog";
 
 const ALTURA_LINHA = 24;
-const RESERVA = 10;
+const RESERVA = 35;
 
 function inteiro(valor) {
   return Math.round(valor || 0).toLocaleString("pt-BR");
@@ -310,25 +310,19 @@ export default function PcpProgramacaoPage() {
     return () => ro.disconnect();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (pendenteRolagemRef.current !== null) cancelAnimationFrame(pendenteRolagemRef.current);
+    };
+  }, []);
+
   function aoRolar(e) {
     const pos = e.currentTarget.scrollTop;
-    posicaoRolagemRef.current = pos;
-    const agora = Date.now();
-    if (agora - ultimoAplicadoRef.current >= 16) {
-      ultimoAplicadoRef.current = agora;
-      if (pendenteRolagemRef.current !== null) {
-        clearTimeout(pendenteRolagemRef.current);
-        pendenteRolagemRef.current = null;
-      }
+    if (pendenteRolagemRef.current !== null) return;
+    pendenteRolagemRef.current = requestAnimationFrame(() => {
       setScrollTop(pos);
-      return;
-    }
-    if (pendenteRolagemRef.current !== null) clearTimeout(pendenteRolagemRef.current);
-    pendenteRolagemRef.current = setTimeout(() => {
       pendenteRolagemRef.current = null;
-      ultimoAplicadoRef.current = Date.now();
-      setScrollTop(posicaoRolagemRef.current);
-    }, 16);
+    });
   }
 
   const primeiroIndice = Math.max(0, Math.floor(scrollTop / ALTURA_LINHA) - RESERVA);
@@ -437,7 +431,7 @@ export default function PcpProgramacaoPage() {
   }
 
   return (
-    <main className="workspace" style={{ padding: 0 }}>
+    <main className="workspace" style={{ padding: 0, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <header className="topbar" style={{ padding: "10px 20px" }}>
         <div className="sheet-header-inline">
           <p className="overline">PCP · Engenharia & Produção</p>
@@ -672,7 +666,8 @@ export default function PcpProgramacaoPage() {
         style={{
           display: "grid",
           gridTemplateColumns: mostrarInspector ? "1fr 340px" : "1fr",
-          height: "calc(100vh - 120px)",
+          flex: 1,
+          minHeight: 0,
           overflow: "hidden",
         }}
       >
