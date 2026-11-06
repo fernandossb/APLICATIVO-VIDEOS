@@ -41,7 +41,7 @@ const PAGES = {
 const MOBILE_QUERY = "(max-width: 860px)";
 
 export default function App() {
-  const [view, setView] = useState("ficha-tecnica");
+  const [view, setView] = useState("qualidade-dashboard");
   const [sessao, setSessao] = useState(supabaseConfigured ? undefined : null);
   // No celular os painéis (menu + lista da página) começam escondidos, já que não cabem do
   // lado do conteúdo — no computador começam abertos, como sempre foi.
@@ -86,7 +86,7 @@ export default function App() {
             <img src={logoUp} alt="UP" className="brand-logo" />
             <div>
               <strong>CosturaFlow</strong>
-              <span>Engenharia · PCP · Compras</span>
+              <span>Qualidade</span>
             </div>
           </div>
 
