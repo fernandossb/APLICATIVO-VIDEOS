@@ -21,7 +21,10 @@ async function consultar(numero) {
       from sisplan.of_iten_001 i left join lateral
       (select descricao from sisplan.cadcor_001 where cor = i.cor limit 1) c on true
       where i.numero = $1 order by i.cor, i.tam`, [numero]);
-    return { encontrado: true, codigo: ordem.rows[0].codigo, descricao: produto.rows[0].descricao, grade: grade.rows };
+    const faccoes = await db.query(`select distinct f.codcli as codigo, e.nome
+      from sisplan.faccao_001 f join sisplan.entidade_001 e on e.codcli = f.codcli
+      where f.numero = $1 and nullif(trim(e.nome), '') is not null order by e.nome`, [numero]);
+    return { encontrado: true, codigo: ordem.rows[0].codigo, descricao: produto.rows[0].descricao, grade: grade.rows, faccoes: faccoes.rows };
   } finally {
     await db.query('ROLLBACK').catch(() => {});
     await db.end();

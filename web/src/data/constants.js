@@ -105,6 +105,7 @@ export const emptyInspecao = () => ({
   qtdDefeito: "",
   qtdReprocesso: "",
   causaPrincipal: "",
+  outraCausa: "",
   causasAdicionais: [],
   observacoes: "",
   status: "Aguardando revisão",

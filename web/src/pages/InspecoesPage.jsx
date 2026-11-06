@@ -31,6 +31,7 @@ export default function InspecoesPage({ active }) {
   const [filtroFornecedor, setFiltroFornecedor] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
   const [gradeOp, setGradeOp] = useState([]);
+  const [faccoesOp, setFaccoesOp] = useState([]);
   const [statusOp, setStatusOp] = useState("");
   const consultaAtual = useRef(0);
 
@@ -38,6 +39,7 @@ export default function InspecoesPage({ active }) {
     const numero = String(inspecao.op || "").trim();
     const consulta = ++consultaAtual.current;
     setGradeOp([]);
+    setFaccoesOp([]);
     setStatusOp("");
     if (!supabaseConfigured || inspecao.id || !/^\d{1,10}$/.test(numero)) return;
     const timer = setTimeout(async () => {
@@ -54,8 +56,10 @@ export default function InspecoesPage({ active }) {
         if (data.estado !== "concluido") continue;
         if (!data.resultado?.encontrado) { setStatusOp("OP não encontrada no SISPLAN."); return; }
         const resultado = data.resultado;
-        setInspecao((atual) => ({ ...atual, referencia: resultado.codigo || "", produto: resultado.descricao || "", cor: "", tamanho: "" }));
+        const cores = [...new Set((resultado.grade || []).map((item) => `${item.cor} - ${item.cor_nome}`))];
+        setInspecao((atual) => ({ ...atual, referencia: resultado.codigo || "", produto: resultado.descricao || "", fornecedor: resultado.faccoes?.length === 1 ? resultado.faccoes[0].nome : "", cor: cores.length === 1 ? cores[0] : "", tamanho: "" }));
         setGradeOp(resultado.grade || []);
+        setFaccoesOp(resultado.faccoes || []);
         setStatusOp(resultado.grade?.length ? "Selecione a cor e o tamanho da OP." : "OP encontrada sem grade cadastrada.");
         return;
       }
@@ -306,26 +310,21 @@ export default function InspecoesPage({ active }) {
                 <input value={inspecao.inspetora} onChange={setField("inspetora")} />
               </label>
               <label>
-                Fornecedor
+                Facção
                 <input value={inspecao.fornecedor} onChange={setField("fornecedor")} placeholder="Nome da facção" />
               </label>
+              {faccoesOp.length > 1 && <label>
+                Facções encontradas na OP
+                <select value={faccoesOp.some((f) => f.nome === inspecao.fornecedor) ? inspecao.fornecedor : ""} onChange={setField("fornecedor")}>
+                  <option value="">Selecione...</option>
+                  {faccoesOp.map((f) => <option key={f.codigo} value={f.nome}>{f.codigo} - {f.nome}</option>)}
+                </select>
+              </label>}
               <label>
                 OP
                 <input value={inspecao.op} onChange={setField("op")} placeholder="Ordem de produção" />
                 {statusOp && <span className="hint" role="status">{statusOp}</span>}
               </label>
-              {gradeOp.length > 0 && (
-                <label>
-                  Cor e tamanho da OP
-                  <select defaultValue="" onChange={(e) => {
-                    const item = gradeOp[Number(e.target.value)];
-                    if (e.target.value !== "" && item) setInspecao((atual) => ({ ...atual, cor: item.cor_nome || item.cor, tamanho: item.tam || "" }));
-                  }}>
-                    <option value="">Selecione...</option>
-                    {gradeOp.map((item, index) => <option key={index} value={index}>{item.cor_nome || item.cor} · {item.tam} · {Number(item.qtde)} peças</option>)}
-                  </select>
-                </label>
-              )}
               <label>
                 Produto
                 <input value={inspecao.produto} onChange={setField("produto")} />
@@ -336,11 +335,17 @@ export default function InspecoesPage({ active }) {
               </label>
               <label>
                 Cor
-                <input value={inspecao.cor} onChange={setField("cor")} />
+                {gradeOp.length ? <select value={inspecao.cor} onChange={(e) => setInspecao((atual) => ({ ...atual, cor: e.target.value, tamanho: "" }))}>
+                  <option value="">Selecione...</option>
+                  {[...new Set(gradeOp.map((item) => `${item.cor} - ${item.cor_nome}`))].map((cor) => <option key={cor} value={cor}>{cor}</option>)}
+                </select> : <input value={inspecao.cor} onChange={setField("cor")} />}
               </label>
               <label>
                 Tamanho
-                <input value={inspecao.tamanho} onChange={setField("tamanho")} />
+                {gradeOp.length ? <select value={inspecao.tamanho} onChange={setField("tamanho")}>
+                  <option value="">Selecione...</option>
+                  {[...new Set(gradeOp.filter((item) => `${item.cor} - ${item.cor_nome}` === inspecao.cor).map((item) => item.tam))].map((tam) => <option key={tam} value={tam}>{tam}</option>)}
+                </select> : <input value={inspecao.tamanho} onChange={setField("tamanho")} />}
               </label>
             </div>
 
@@ -406,6 +411,13 @@ export default function InspecoesPage({ active }) {
                 );
               })}
             </div>
+
+            {(inspecao.causaPrincipal === "Outro" || (inspecao.causasAdicionais || []).includes("Outro")) && (
+              <label className="full-width" style={{ marginTop: 20 }}>
+                Descreva a razão do reprocesso
+                <textarea rows={3} value={inspecao.outraCausa || ""} onChange={setField("outraCausa")} />
+              </label>
+            )}
 
             <label className="full-width" style={{ marginTop: 20 }}>
               Observações
