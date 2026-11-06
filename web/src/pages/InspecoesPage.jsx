@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { inspecoesStore } from "../lib/storage";
 import { supabase, supabaseConfigured } from "../lib/supabase";
 import { embutirImagemUnica, nomeDoArquivoNoBucket, rehospedarImagemUnica } from "../lib/imagens";
@@ -30,6 +30,39 @@ export default function InspecoesPage({ active }) {
   const [busca, setBusca] = useState("");
   const [filtroFornecedor, setFiltroFornecedor] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
+  const [gradeOp, setGradeOp] = useState([]);
+  const [statusOp, setStatusOp] = useState("");
+  const consultaAtual = useRef(0);
+
+  useEffect(() => {
+    const numero = String(inspecao.op || "").trim();
+    const consulta = ++consultaAtual.current;
+    setGradeOp([]);
+    setStatusOp("");
+    if (!supabaseConfigured || inspecao.id || !/^\d{1,10}$/.test(numero)) return;
+    const timer = setTimeout(async () => {
+      setStatusOp("Consultando OP no SISPLAN...");
+      const { data: pedido, error } = await supabase.from("consultas_op").insert({ numero }).select("id").single();
+      if (consulta !== consultaAtual.current) return;
+      if (error) { setStatusOp("Não foi possível solicitar a consulta."); return; }
+      for (let tentativa = 0; tentativa < 20; tentativa++) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        if (consulta !== consultaAtual.current) return;
+        const { data, error: erroConsulta } = await supabase.from("consultas_op").select("estado,resultado").eq("id", pedido.id).single();
+        if (erroConsulta) { setStatusOp("Não foi possível consultar a resposta."); return; }
+        if (data.estado === "erro") { setStatusOp("Falha na consulta ao SISPLAN."); return; }
+        if (data.estado !== "concluido") continue;
+        if (!data.resultado?.encontrado) { setStatusOp("OP não encontrada no SISPLAN."); return; }
+        const resultado = data.resultado;
+        setInspecao((atual) => ({ ...atual, referencia: resultado.codigo || "", produto: resultado.descricao || "", cor: "", tamanho: "" }));
+        setGradeOp(resultado.grade || []);
+        setStatusOp(resultado.grade?.length ? "Selecione a cor e o tamanho da OP." : "OP encontrada sem grade cadastrada.");
+        return;
+      }
+      if (consulta === consultaAtual.current) setStatusOp("O conector está indisponível. Tente novamente.");
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [inspecao.op, inspecao.id]);
 
   const refresh = async () => {
     try {
@@ -279,7 +312,20 @@ export default function InspecoesPage({ active }) {
               <label>
                 OP
                 <input value={inspecao.op} onChange={setField("op")} placeholder="Ordem de produção" />
+                {statusOp && <span className="hint" role="status">{statusOp}</span>}
               </label>
+              {gradeOp.length > 0 && (
+                <label>
+                  Cor e tamanho da OP
+                  <select defaultValue="" onChange={(e) => {
+                    const item = gradeOp[Number(e.target.value)];
+                    if (e.target.value !== "" && item) setInspecao((atual) => ({ ...atual, cor: item.cor_nome || item.cor, tamanho: item.tam || "" }));
+                  }}>
+                    <option value="">Selecione...</option>
+                    {gradeOp.map((item, index) => <option key={index} value={index}>{item.cor_nome || item.cor} · {item.tam} · {Number(item.qtde)} peças</option>)}
+                  </select>
+                </label>
+              )}
               <label>
                 Produto
                 <input value={inspecao.produto} onChange={setField("produto")} />
